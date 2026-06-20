@@ -3,464 +3,442 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#1a3a2a">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Qiblat">
+<meta name="theme-color" id="meta-theme" content="#1a3a2a">
 <title>The Qiblat</title>
+
+<!-- PWA icons generated as inline SVG data URIs (no external files needed) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231a3a2a'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle'%3E🧭%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3a2a'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E🧭%3C/text%3E%3C/svg%3E">
+
 <style>
-  /* ── Tokens ──────────────────────────────────────────────────── */
-  :root {
-    --bg:          #0d1f17;
-    --bg2:         #122019;
-    --surface:     #1a3028;
-    --surface2:    #1f3a30;
-    --border:      #2a5040;
-    --gold:        #c8a84b;
-    --gold2:       #e6c96a;
-    --green:       #2ecc7a;
-    --green-dim:   #1a7a47;
-    --red:         #e05555;
-    --text:        #e8f0ea;
-    --text2:       #8aaa96;
-    --text3:       #556a5e;
-    --tab-h:       68px;
-    --safe-b:      env(safe-area-inset-bottom, 0px);
-    --radius:      16px;
-  }
-  .light {
-    --bg:          #f0f4f1;
-    --bg2:         #e4ebe5;
-    --surface:     #ffffff;
-    --surface2:    #f7faf7;
-    --border:      #c8d8cc;
-    --gold:        #a07820;
-    --gold2:       #c09030;
-    --green:       #1a8a50;
-    --green-dim:   #1a8a50;
-    --red:         #cc3333;
-    --text:        #0f2018;
-    --text2:       #4a6a54;
-    --text3:       #8aaa96;
-  }
+/* ── Design tokens: dark (default) ──────────────────────── */
+:root {
+  --bg:        #0d1f17;
+  --bg2:       #122019;
+  --surface:   #1a3028;
+  --surface2:  #1f3a30;
+  --border:    #2a5040;
+  --gold:      #c8a84b;
+  --gold2:     #e6c96a;
+  --green:     #2ecc7a;
+  --green-dim: #1a7a47;
+  --red:       #e05555;
+  --text:      #e8f0ea;
+  --text2:     #8aaa96;
+  --text3:     #556a5e;
+  --tab-h:     68px;
+  --safe-b:    env(safe-area-inset-bottom, 0px);
+  --radius:    16px;
+}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── Light theme (toggled via JS, not media query) ──────── */
+html.light {
+  --bg:        #f0f4f1;
+  --bg2:       #e4ebe5;
+  --surface:   #ffffff;
+  --surface2:  #f7faf7;
+  --border:    #c8d8cc;
+  --gold:      #a07820;
+  --gold2:     #8a6010;
+  --green:     #1a8a50;
+  --green-dim: #1a8a50;
+  --red:       #cc3333;
+  --text:      #0f2018;
+  --text2:     #3a5a44;
+  --text3:     #7a9a84;
+}
 
-  html, body {
-    height: 100%; width: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ── App shell ───────────────────────────────────────────────── */
-  #app {
-    display: flex; flex-direction: column;
-    height: 100dvh; width: 100%;
-    max-width: 480px; margin: 0 auto;
-    position: relative; overflow: hidden;
-  }
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.25s, color 0.25s;
+}
 
-  .screen {
-    display: none; flex-direction: column;
-    flex: 1; overflow-y: auto; overflow-x: hidden;
-  }
-  .screen.active { display: flex; }
+/* ── App shell ──────────────────────────────────────────── */
+#app {
+  display: flex; flex-direction: column;
+  height: 100dvh; width: 100%;
+  max-width: 480px; margin: 0 auto;
+  position: relative; overflow: hidden;
+}
 
-  /* ── Top bar ─────────────────────────────────────────────────── */
-  .topbar {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 16px 12px;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-    position: sticky; top: 0; z-index: 10;
-  }
-  .topbar-title {
-    font-size: 17px; font-weight: 700; letter-spacing: 0.3px;
-    color: var(--gold2);
-  }
-  .topbar-sub {
-    font-size: 12px; color: var(--text2); margin-top: 1px;
-  }
-  .icon-btn {
-    background: none; border: none; cursor: pointer;
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text2); font-size: 18px;
-    transition: background 0.15s;
-  }
-  .icon-btn:hover { background: var(--surface2); }
+.screen {
+  display: none; flex-direction: column;
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: var(--bg);
+}
+.screen.active { display: flex; }
 
-  /* ── Bottom nav ──────────────────────────────────────────────── */
-  .bottom-nav {
-    display: flex; flex-shrink: 0;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    height: var(--tab-h);
-    padding-bottom: var(--safe-b);
-  }
-  .tab {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 4px; cursor: pointer;
-    background: none; border: none;
-    color: var(--text3); font-size: 10px; font-weight: 600;
-    letter-spacing: 0.4px; text-transform: uppercase;
-    transition: color 0.18s;
-    padding: 8px 0;
-  }
-  .tab.active { color: var(--gold2); }
-  .tab-icon { font-size: 22px; line-height: 1; }
+/* ── Top bar ────────────────────────────────────────────── */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; position: sticky; top: 0; z-index: 10;
+  transition: background 0.25s, border-color 0.25s;
+}
+.topbar-title {
+  font-size: 17px; font-weight: 700; letter-spacing: 0.3px;
+  color: var(--gold2);
+}
+.topbar-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.topbar-actions { display: flex; gap: 4px; }
 
-  /* ── Compass screen ──────────────────────────────────────────── */
-  #compass-screen {
-    align-items: center;
-    background: var(--bg);
-  }
-  .location-chip {
-    margin: 12px 16px 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 7px 14px;
-    font-size: 13px; color: var(--text2);
-    display: flex; align-items: center; gap: 6px;
-    align-self: center; max-width: 90%;
-    text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
-  }
-  .qiblah-info {
-    font-size: 12px; color: var(--text3);
-    margin: 4px 0 8px;
-    text-align: center;
-  }
+.icon-btn {
+  background: none; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2); font-size: 18px;
+  transition: background 0.15s;
+}
+.icon-btn:active { background: var(--surface2); }
 
-  /* compass wrapper */
-  .compass-wrap {
-    position: relative;
-    width: min(72vw, 320px);
-    height: min(72vw, 320px);
-    flex-shrink: 0;
-    margin: 8px auto;
-  }
+/* ── Bottom nav ─────────────────────────────────────────── */
+.bottom-nav {
+  display: flex; flex-shrink: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  height: var(--tab-h);
+  padding-bottom: var(--safe-b);
+  transition: background 0.25s, border-color 0.25s;
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px; cursor: pointer;
+  background: none; border: none;
+  color: var(--text3); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.4px; text-transform: uppercase;
+  transition: color 0.18s; padding: 8px 0;
+}
+.tab.active { color: var(--gold2); }
+.tab-icon { font-size: 22px; line-height: 1; }
 
-  /* stop arrow – fixed at top, outside canvas */
-  .stop-arrow {
-    position: absolute;
-    top: -18px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 0;
-    width: 0; height: 0;
-    border-left: 9px solid transparent;
-    border-right: 9px solid transparent;
-    border-top: 18px solid var(--gold2);
-    z-index: 5;
-    filter: drop-shadow(0 0 6px var(--gold));
-    transition: border-top-color 0.3s;
-  }
-  .stop-arrow.aligned { border-top-color: var(--green); }
+/* ── State panels ───────────────────────────────────────── */
+.loading-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex: 1; gap: 14px; color: var(--text2); font-size: 14px;
+}
+.error-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex: 1; gap: 12px; padding: 24px;
+  text-align: center; color: var(--text2);
+}
+.error-icon { font-size: 48px; }
+.retry-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 20px;
+  color: var(--text); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.retry-btn:active { border-color: var(--gold); }
 
-  canvas#compassCanvas {
-    width: 100%; height: 100%;
-    border-radius: 50%;
-  }
+.spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold2);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  .align-banner {
-    margin: 10px 20px 0;
-    padding: 10px 18px;
-    border-radius: 12px;
-    background: transparent;
-    text-align: center;
-    font-size: 14px; font-weight: 600;
-    color: var(--text3);
-    border: 1px solid transparent;
-    transition: all 0.3s;
-    align-self: stretch;
-  }
-  .align-banner.aligned {
-    background: var(--green-dim);
-    color: #fff;
-    border-color: var(--green);
-  }
+/* ══════════════════════════════════════════════════════════
+   COMPASS SCREEN
+══════════════════════════════════════════════════════════ */
+#compass-screen { align-items: center; }
 
-  /* ── Prayer times screen ──────────────────────────────────────── */
-  #prayer-screen { background: var(--bg); }
+.compass-topbar-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
 
-  .location-header {
-    margin: 12px 16px 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-  }
-  .location-name {
-    font-size: 15px; font-weight: 700; color: var(--text);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .date-str {
-    font-size: 12px; color: var(--text2); margin-top: 4px;
-  }
-  .hijri-date {
-    font-size: 11px; color: var(--text3); margin-top: 2px;
-    font-style: italic;
-  }
+.location-chip {
+  margin: 12px 16px 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 7px 14px;
+  font-size: 13px; color: var(--text2);
+  display: flex; align-items: center; gap: 6px;
+  align-self: center; max-width: 90%;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  transition: background 0.25s, border-color 0.25s;
+}
+.qiblah-info {
+  font-size: 12px; color: var(--text3);
+  margin: 4px 0 8px; text-align: center;
+}
+.compass-wrap {
+  position: relative;
+  width: min(74vw, 310px); height: min(74vw, 310px);
+  flex-shrink: 0; margin: 8px auto 0;
+}
+/* Fixed stop-arrow at top of frame — always points downward into dial */
+.stop-arrow {
+  position: absolute;
+  top: -20px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 20px solid var(--gold2);
+  z-index: 5;
+  filter: drop-shadow(0 0 5px var(--gold));
+  transition: border-top-color 0.3s, filter 0.3s;
+}
+.stop-arrow.aligned {
+  border-top-color: var(--green);
+  filter: drop-shadow(0 0 8px var(--green));
+}
+canvas#compassCanvas { width: 100%; height: 100%; border-radius: 50%; display: block; }
 
-  .prayer-list { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.align-banner {
+  margin: 12px 20px 0; padding: 10px 16px;
+  border-radius: 12px; border: 1px solid transparent;
+  text-align: center; font-size: 13px; font-weight: 600;
+  color: var(--text3); background: transparent;
+  transition: all 0.3s; align-self: stretch;
+}
+.align-banner.aligned {
+  background: var(--green-dim); color: #fff; border-color: var(--green);
+}
 
-  .prayer-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    display: flex; align-items: center; gap: 14px;
-    transition: border-color 0.3s;
-  }
-  .prayer-card.current { border-color: var(--gold); }
-  .prayer-card.next     { border-color: var(--green-dim); }
+/* ══════════════════════════════════════════════════════════
+   PRAYER TIMES SCREEN
+══════════════════════════════════════════════════════════ */
+.location-header {
+  margin: 12px 14px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: background 0.25s, border-color 0.25s;
+}
+.location-name {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.date-str  { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.hijri-str { font-size: 11px; color: var(--text3); margin-top: 2px; font-style: italic; }
 
-  .prayer-icon { font-size: 26px; flex-shrink: 0; }
-  .prayer-info { flex: 1; min-width: 0; }
-  .prayer-name { font-size: 15px; font-weight: 600; }
-  .prayer-label {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-    text-transform: uppercase; margin-top: 2px;
-  }
-  .prayer-card.current .prayer-label { color: var(--gold2); }
-  .prayer-card.next    .prayer-label { color: var(--green); }
+.prayer-list {
+  padding: 10px 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
 
-  .prayer-time {
-    font-size: 22px; font-weight: 700;
-    color: var(--gold2); letter-spacing: -0.5px;
-  }
-  .alarm-btn {
-    background: none; border: 1px solid var(--border);
-    border-radius: 8px; cursor: pointer;
-    width: 34px; height: 34px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: var(--text3);
-    transition: all 0.15s;
-    flex-shrink: 0;
-  }
-  .alarm-btn.on {
-    background: var(--surface2);
-    border-color: var(--gold);
-    color: var(--gold2);
-  }
+/* prayer card — fixed flex layout so time never overflows */
+.prayer-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  display: flex; align-items: center;
+  gap: 12px;
+  transition: background 0.25s, border-color 0.25s;
+}
+.prayer-card.is-current { border-color: var(--gold); }
+.prayer-card.is-next    { border-color: var(--green-dim); }
 
-  /* ── Settings screen ─────────────────────────────────────────── */
-  #settings-screen { background: var(--bg); }
+.p-icon  { font-size: 26px; flex-shrink: 0; width: 32px; text-align: center; }
+.p-info  { flex: 1; min-width: 0; }
+.p-name  { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.p-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; margin-top: 3px;
+  padding: 2px 6px; border-radius: 4px;
+}
+.is-current .p-badge { background: var(--gold);     color: #0d1f17; }
+.is-next    .p-badge { background: var(--green-dim); color: #fff; }
 
-  .settings-list { padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 6px; }
+.p-time {
+  font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--gold2); flex-shrink: 0; white-space: nowrap;
+  min-width: 72px; text-align: right;
+}
+html.light .p-time { color: var(--gold2); }
 
-  .section-label {
-    font-size: 11px; font-weight: 700; letter-spacing: 1px;
-    text-transform: uppercase; color: var(--gold);
-    padding: 14px 4px 6px;
-  }
+.alarm-btn {
+  flex-shrink: 0;
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; transition: all 0.15s;
+}
+.alarm-btn.on {
+  background: var(--surface2); border-color: var(--gold);
+}
 
-  .setting-row {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 13px 14px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .setting-icon { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
-  .setting-info { flex: 1; min-width: 0; }
-  .setting-title { font-size: 14px; font-weight: 600; }
-  .setting-sub   { font-size: 12px; color: var(--text2); margin-top: 2px; }
+/* ══════════════════════════════════════════════════════════
+   SETTINGS SCREEN
+══════════════════════════════════════════════════════════ */
+.settings-list {
+  padding: 8px 14px 32px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--gold);
+  padding: 16px 4px 6px;
+}
+.setting-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  transition: background 0.25s, border-color 0.25s;
+}
+.s-icon  { font-size: 20px; flex-shrink: 0; width: 26px; text-align: center; }
+.s-info  { flex: 1; min-width: 0; }
+.s-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.s-sub   { font-size: 12px; color: var(--text2); margin-top: 2px; }
 
-  /* Toggle switch */
-  .toggle {
-    position: relative; width: 44px; height: 26px; flex-shrink: 0;
-  }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-track {
-    position: absolute; inset: 0; border-radius: 13px;
-    background: var(--border); cursor: pointer;
-    transition: background 0.2s;
-  }
-  .toggle input:checked + .toggle-track { background: var(--green-dim); }
-  .toggle-thumb {
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 20px; height: 20px; border-radius: 50%;
-    background: #fff;
-    pointer-events: none;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  }
-  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+/* Toggle */
+.toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0; border-radius: 13px;
+  background: var(--border); cursor: pointer; transition: background 0.2s;
+}
+.toggle input:checked + .toggle-track { background: var(--green-dim); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; pointer-events: none;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
 
-  /* Select / radio buttons for calc method */
-  .method-options { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-  .method-opt {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    display: flex; align-items: center; gap: 10px;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .method-opt.selected { border-color: var(--gold); }
-  .method-radio {
-    width: 18px; height: 18px; border-radius: 50%;
-    border: 2px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: border-color 0.15s;
-  }
-  .method-opt.selected .method-radio { border-color: var(--gold); }
-  .method-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--gold2); opacity: 0; transition: opacity 0.15s;
-  }
-  .method-opt.selected .method-dot { opacity: 1; }
-  .method-name  { font-size: 13px; font-weight: 600; }
-  .method-desc  { font-size: 11px; color: var(--text2); }
+/* Method radio */
+.method-options { display: flex; flex-direction: column; gap: 5px; }
+.method-opt {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.method-opt.sel { border-color: var(--gold); }
+.m-radio {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s;
+}
+.method-opt.sel .m-radio { border-color: var(--gold); }
+.m-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold2); opacity: 0; transition: opacity 0.15s;
+}
+.method-opt.sel .m-dot { opacity: 1; }
+.m-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.m-desc { font-size: 11px; color: var(--text2); }
 
-  /* ── Popup overlay ───────────────────────────────────────────── */
-  .overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 100; align-items: center; justify-content: center;
-  }
-  .overlay.visible { display: flex; }
-  .popup {
-    background: var(--surface);
-    border: 1px solid var(--gold);
-    border-radius: 24px;
-    padding: 28px 24px;
-    max-width: 300px; width: 90%;
-    text-align: center;
-    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  @keyframes popIn {
-    from { transform: scale(0.7); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-  }
-  .popup-icon { font-size: 48px; margin-bottom: 12px; }
-  .popup-title { font-size: 20px; font-weight: 700; color: var(--gold2); margin-bottom: 8px; }
-  .popup-sub   { font-size: 14px; color: var(--text2); margin-bottom: 20px; }
-  .popup-btn {
-    background: var(--gold); color: #0d1f17;
-    border: none; border-radius: 12px;
-    padding: 12px 32px; font-size: 15px; font-weight: 700;
-    cursor: pointer; width: 100%;
-    transition: opacity 0.15s;
-  }
-  .popup-btn:hover { opacity: 0.85; }
+/* ── Popup ──────────────────────────────────────────────── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 100; align-items: center; justify-content: center;
+}
+.overlay.visible { display: flex; }
+.popup {
+  background: var(--surface); border: 1px solid var(--gold);
+  border-radius: 24px; padding: 28px 24px;
+  max-width: 300px; width: 90%; text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+.popup-icon  { font-size: 52px; margin-bottom: 12px; }
+.popup-title { font-size: 20px; font-weight: 700; color: var(--gold2); margin-bottom: 6px; }
+.popup-sub   { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+.popup-btn {
+  background: var(--gold); color: #0d1f17;
+  border: none; border-radius: 12px;
+  padding: 12px 0; font-size: 15px; font-weight: 700;
+  cursor: pointer; width: 100%; transition: opacity 0.15s;
+}
+.popup-btn:active { opacity: 0.8; }
 
-  /* ── Spinner ─────────────────────────────────────────────────── */
-  .spinner {
-    width: 40px; height: 40px; border-radius: 50%;
-    border: 3px solid var(--border);
-    border-top-color: var(--gold2);
-    animation: spin 0.8s linear infinite;
-    margin: auto;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-state {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    flex: 1; gap: 14px;
-    color: var(--text2); font-size: 14px;
-  }
-  .error-state {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    flex: 1; gap: 12px; padding: 24px;
-    text-align: center; color: var(--text2);
-  }
-  .error-icon { font-size: 48px; }
-  .retry-btn {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 20px;
-    color: var(--text); font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: border-color 0.15s;
-  }
-  .retry-btn:hover { border-color: var(--gold); color: var(--gold2); }
-
-  /* ── Scroll tweaks ───────────────────────────────────────────── */
-  .screen { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .screen::-webkit-scrollbar { display: none; }
-
-  @media (prefers-color-scheme: light) {
-    :root:not(.light):not(.dark) {
-      --bg:#f0f4f1;--bg2:#e4ebe5;--surface:#fff;--surface2:#f7faf7;
-      --border:#c8d8cc;--gold:#a07820;--gold2:#c09030;
-      --green:#1a8a50;--green-dim:#1a8a50;--red:#cc3333;
-      --text:#0f2018;--text2:#4a6a54;--text3:#8aaa96;
-    }
-  }
+/* ── Scroll ─────────────────────────────────────────────── */
+.screen { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- ══════════════ COMPASS SCREEN ══════════════ -->
+  <!-- ══════ COMPASS ══════ -->
   <div id="compass-screen" class="screen active">
     <div class="topbar">
       <div>
         <div class="topbar-title">🧭 The Qiblat</div>
         <div class="topbar-sub" id="compass-subtitle">Qiblah Compass</div>
       </div>
-      <button class="icon-btn" id="refresh-compass" title="Refresh location">↺</button>
+      <button class="icon-btn" id="refresh-compass" title="Refresh">↺</button>
     </div>
-    <div id="compass-body" style="display:flex;flex-direction:column;align-items:center;flex:1;padding-bottom:12px;">
-      <div class="loading-state" id="compass-loading">
-        <div class="spinner"></div>
-        <span>Getting your location…</span>
+
+    <div id="compass-loading" class="loading-state">
+      <div class="spinner"></div>
+      <span>Getting your location…</span>
+    </div>
+    <div id="compass-error" class="error-state" style="display:none">
+      <div class="error-icon">📍</div>
+      <p id="compass-err-msg" style="font-size:14px;line-height:1.5"></p>
+      <button class="retry-btn" id="compass-retry">Try again</button>
+    </div>
+    <div id="compass-content" style="display:none;flex-direction:column;align-items:center;flex:1;padding-bottom:16px;">
+      <div class="location-chip" id="compass-city">📍 —</div>
+      <div class="qiblah-info" id="qiblah-deg">Qiblah: —°</div>
+      <div class="compass-wrap">
+        <div class="stop-arrow" id="stop-arrow"></div>
+        <canvas id="compassCanvas" width="600" height="600"></canvas>
       </div>
-      <div class="error-state" id="compass-error" style="display:none;">
-        <div class="error-icon">📍</div>
-        <p id="compass-error-msg"></p>
-        <button class="retry-btn" id="compass-retry">Try again</button>
-      </div>
-      <div id="compass-content" style="display:none;width:100%;display:none;flex-direction:column;align-items:center;flex:1;">
-        <div class="location-chip" id="compass-location">📍 —</div>
-        <div class="qiblah-info" id="qiblah-deg">Qiblah: —°</div>
-        <div class="compass-wrap">
-          <div class="stop-arrow" id="stop-arrow"></div>
-          <canvas id="compassCanvas" width="600" height="600"></canvas>
-        </div>
-        <div class="align-banner" id="align-banner">
-          Rotate until the green marker aligns with the arrow
-        </div>
+      <div class="align-banner" id="align-banner">
+        Rotate until the green 🕋 marker meets the arrow above
       </div>
     </div>
   </div>
 
-  <!-- ══════════════ PRAYER TIMES SCREEN ══════════════ -->
+  <!-- ══════ PRAYER TIMES ══════ -->
   <div id="prayer-screen" class="screen">
     <div class="topbar">
       <div>
         <div class="topbar-title">🕋 Prayer Times</div>
-        <div class="topbar-sub" id="prayer-subtitle">Daily prayer schedule</div>
+        <div class="topbar-sub" id="prayer-subtitle">Daily schedule</div>
       </div>
-      <div style="display:flex;gap:4px;">
-        <button class="icon-btn" id="toggle-theme" title="Toggle theme">🌙</button>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="theme-btn" title="Toggle theme">🌙</button>
         <button class="icon-btn" id="refresh-prayer" title="Refresh">↺</button>
       </div>
     </div>
     <div id="prayer-loading" class="loading-state"><div class="spinner"></div><span>Calculating…</span></div>
-    <div id="prayer-error" class="error-state" style="display:none;">
+    <div id="prayer-error"  class="error-state" style="display:none">
       <div class="error-icon">📍</div>
-      <p id="prayer-error-msg"></p>
+      <p id="prayer-err-msg" style="font-size:14px;line-height:1.5"></p>
       <button class="retry-btn" id="prayer-retry">Try again</button>
     </div>
-    <div id="prayer-content" style="display:none;">
+    <div id="prayer-content" style="display:none">
       <div class="location-header">
-        <div class="location-name" id="prayer-location">📍 —</div>
-        <div class="date-str" id="prayer-date">—</div>
-        <div class="hijri-date" id="hijri-date"></div>
+        <div class="location-name" id="prayer-city">📍 —</div>
+        <div class="date-str"  id="prayer-date">—</div>
+        <div class="hijri-str" id="prayer-hijri"></div>
       </div>
       <div class="prayer-list" id="prayer-list"></div>
     </div>
   </div>
 
-  <!-- ══════════════ SETTINGS SCREEN ══════════════ -->
+  <!-- ══════ SETTINGS ══════ -->
   <div id="settings-screen" class="screen">
     <div class="topbar">
       <div>
@@ -469,13 +447,13 @@
       </div>
     </div>
     <div class="settings-list">
-
       <div class="section-label">Appearance</div>
+
       <div class="setting-row">
-        <span class="setting-icon" id="theme-icon">🌙</span>
-        <div class="setting-info">
-          <div class="setting-title">Dark Mode</div>
-          <div class="setting-sub" id="theme-sub">Dark theme active</div>
+        <span class="s-icon" id="s-theme-icon">🌙</span>
+        <div class="s-info">
+          <div class="s-title">Dark Mode</div>
+          <div class="s-sub" id="s-theme-sub">Dark theme active</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="dark-toggle" checked>
@@ -483,11 +461,12 @@
           <div class="toggle-thumb"></div>
         </label>
       </div>
+
       <div class="setting-row">
-        <span class="setting-icon">🕐</span>
-        <div class="setting-info">
-          <div class="setting-title">24-hour Time</div>
-          <div class="setting-sub">Toggle 12h / 24h format</div>
+        <span class="s-icon">🕐</span>
+        <div class="s-info">
+          <div class="s-title">24-hour Time</div>
+          <div class="s-sub">Toggle 12h / 24h format</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="h24-toggle">
@@ -497,470 +476,438 @@
       </div>
 
       <div class="section-label">⏰ Prayer Alarms</div>
-      <div id="alarm-toggles"></div>
+      <div id="alarm-rows"></div>
 
       <div class="section-label">Calculation Method</div>
-      <div class="method-options" id="method-options"></div>
+      <div class="method-options" id="method-opts"></div>
 
-      <div style="text-align:center;color:var(--text3);font-size:11px;margin-top:24px;">
-        The Qiblat v1.0.0 &nbsp;·&nbsp; Kaabah 21.4225°N 39.8262°E
+      <div style="text-align:center;color:var(--text3);font-size:11px;margin-top:28px;line-height:1.8">
+        The Qiblat v1.0.0<br>Kaabah 21.4225°N 39.8262°E
       </div>
     </div>
   </div>
 
-  <!-- ══════════════ BOTTOM NAV ══════════════ -->
+  <!-- ══════ BOTTOM NAV ══════ -->
   <nav class="bottom-nav">
-    <button class="tab active" data-screen="compass-screen">
+    <button class="tab active" data-s="compass-screen">
       <span class="tab-icon">🧭</span>Qiblah
     </button>
-    <button class="tab" data-screen="prayer-screen">
+    <button class="tab" data-s="prayer-screen">
       <span class="tab-icon">🕋</span>Prayer
     </button>
-    <button class="tab" data-screen="settings-screen">
+    <button class="tab" data-s="settings-screen">
       <span class="tab-icon">⚙️</span>Settings
     </button>
   </nav>
 </div>
 
-<!-- Aligned popup -->
-<div class="overlay" id="aligned-overlay">
+<!-- Popup -->
+<div class="overlay" id="overlay">
   <div class="popup">
     <div class="popup-icon">🕋</div>
     <div class="popup-title">Alhamdulillah!</div>
-    <div class="popup-sub">You are facing the Kaabah<br><span style="color:var(--text3);font-size:12px;">Makkah al-Mukarramah</span></div>
+    <div class="popup-sub">
+      You are facing the Kaabah<br>
+      <span style="font-size:12px;color:var(--text3)">Makkah al-Mukarramah</span>
+    </div>
     <button class="popup-btn" id="popup-ok">OK</button>
   </div>
 </div>
 
 <script>
-/* ════════════════════════════════════════════════════════
+'use strict';
+/* ═══════════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════════ */
 const S = {
-  darkMode: true,
+  dark: true,
   use24h: false,
-  alarms: { Fajr:false, Dhuhr:false, Asr:false, Maghrib:false, Isha:false },
-  calcMethod: 'MWL',
-  lat: null, lng: null, cityName: '',
+  alarms: {Fajr:false,Dhuhr:false,Asr:false,Maghrib:false,Isha:false},
+  method: 'MWL',
+  lat: null, lng: null, city: '',
   qiblahAz: null,
   heading: 0,
   aligned: false,
   popupShown: false,
-  compassInited: false,
-  prayerTimes: null,
+  compassStarted: false,
+  times: null,
 };
 
 const PRAYERS = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
-const PRAYER_ICONS = { Fajr:'🌅', Dhuhr:'🌞', Asr:'🌤', Maghrib:'🌇', Isha:'🌙' };
+const P_ICON  = {Fajr:'🌅',Dhuhr:'🌞',Asr:'🌤',Maghrib:'🌇',Isha:'🌙'};
 
 const METHODS = [
-  { id:'MWL',   name:'Muslim World League', desc:'Fajr 18°, Isha 17° — Europe, Far East' },
-  { id:'ISNA',  name:'ISNA (North America)', desc:'Fajr 15°, Isha 15°' },
-  { id:'UMQ',   name:'Umm al-Qura (Makkah)', desc:'Saudi Arabia' },
-  { id:'EGY',   name:'Egyptian General Survey', desc:'Fajr 19.5°, Isha 17.5°' },
-  { id:'KAR',   name:'Karachi / Hanafi', desc:'Fajr 18°, Isha 18°' },
+  {id:'MWL',  name:'Muslim World League',    desc:'Fajr 18°, Isha 17° — SE Asia, Europe'},
+  {id:'ISNA', name:'ISNA (North America)',    desc:'Fajr 15°, Isha 15°'},
+  {id:'UMQ',  name:'Umm al-Qura (Makkah)',   desc:'Isha = 90 min after Maghrib'},
+  {id:'EGY',  name:'Egyptian General Survey',desc:'Fajr 19.5°, Isha 17.5°'},
+  {id:'KAR',  name:'Karachi / Hanafi',       desc:'Fajr 18°, Isha 18°'},
 ];
 
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    PERSISTENCE
 ═══════════════════════════════════════════════════════════ */
-function savePrefs() {
-  try {
-    localStorage.setItem('qiblat_prefs', JSON.stringify({
-      darkMode: S.darkMode, use24h: S.use24h,
-      alarms: S.alarms, calcMethod: S.calcMethod,
-    }));
-  } catch(e) {}
+function savePref() {
+  try { localStorage.setItem('qiblat', JSON.stringify(
+    {dark:S.dark, use24h:S.use24h, alarms:S.alarms, method:S.method})); } catch(e){}
 }
-function loadPrefs() {
+function loadPref() {
   try {
-    const d = JSON.parse(localStorage.getItem('qiblat_prefs') || '{}');
-    if (d.darkMode  !== undefined) S.darkMode  = d.darkMode;
-    if (d.use24h    !== undefined) S.use24h    = d.use24h;
-    if (d.alarms)    Object.assign(S.alarms,  d.alarms);
-    if (d.calcMethod) S.calcMethod = d.calcMethod;
-  } catch(e) {}
+    const d = JSON.parse(localStorage.getItem('qiblat')||'{}');
+    if (d.dark    !== undefined) S.dark   = d.dark;
+    if (d.use24h  !== undefined) S.use24h = d.use24h;
+    if (d.alarms) Object.assign(S.alarms, d.alarms);
+    if (d.method) S.method = d.method;
+  } catch(e){}
 }
 
-/* ════════════════════════════════════════════════════════
-   THEME
+/* ═══════════════════════════════════════════════════════════
+   THEME  — class on <html> is the single source of truth
 ═══════════════════════════════════════════════════════════ */
 function applyTheme() {
-  document.documentElement.classList.toggle('light', !S.darkMode);
-  document.getElementById('dark-toggle').checked = S.darkMode;
-  document.getElementById('theme-icon').textContent = S.darkMode ? '🌙' : '☀️';
-  document.getElementById('theme-sub').textContent  = S.darkMode ? 'Dark theme active' : 'Light theme active';
-  document.getElementById('toggle-theme').textContent = S.darkMode ? '🌙' : '☀️';
-  document.querySelector('meta[name=theme-color]').content = S.darkMode ? '#1a3a2a' : '#e4ebe5';
+  document.documentElement.classList.toggle('light', !S.dark);
+
+  const mc = document.getElementById('meta-theme');
+  if (mc) mc.content = S.dark ? '#1a3a2a' : '#e4ebe5';
+
+  // Settings toggle
+  const dt = document.getElementById('dark-toggle');
+  if (dt) dt.checked = S.dark;
+  const si = document.getElementById('s-theme-icon');
+  if (si) si.textContent = S.dark ? '🌙' : '☀️';
+  const ss = document.getElementById('s-theme-sub');
+  if (ss) ss.textContent = S.dark ? 'Dark theme active' : 'Light theme active';
+
+  // Prayer screen button
+  const tb = document.getElementById('theme-btn');
+  if (tb) tb.textContent = S.dark ? '🌙' : '☀️';
+
+  // Redraw canvas in new palette
+  drawCompass(S.heading);
 }
 
-/* ════════════════════════════════════════════════════════
-   QIBLAH CALC
-   Great-circle bearing: atan2(sinΔλ·cosφ₂, cosφ₁·sinφ₂ − sinφ₁·cosφ₂·cosΔλ)
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
 ═══════════════════════════════════════════════════════════ */
+const D2R = Math.PI / 180;
+const R2D = 180 / Math.PI;
 const KAABAH_LAT = 21.4225, KAABAH_LNG = 39.8262;
-const R2D = 180 / Math.PI, D2R = Math.PI / 180;
 
+/* ═══════════════════════════════════════════════════════════
+   QIBLAH  (great-circle bearing)
+═══════════════════════════════════════════════════════════ */
 function calcQiblah(lat, lng) {
   const φ1 = lat * D2R, φ2 = KAABAH_LAT * D2R;
   const Δλ = (KAABAH_LNG - lng) * D2R;
-  const y  = Math.sin(Δλ) * Math.cos(φ2);
-  const x  = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-  return ((Math.atan2(y, x) * R2D) + 360) % 360;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  return ((Math.atan2(y,x)*R2D) + 360) % 360;
 }
 
-/* ════════════════════════════════════════════════════════
-   PRAYER TIME CALC  (Astronomical Algorithm)
-   Method params: { fajrAngle, ishaAngle | ishaMinutes }
+/* ═══════════════════════════════════════════════════════════
+   PRAYER TIME CALC  (corrected astronomical algorithm)
+   Hour angle formula: cos(H) = (sin(alt) - sin(lat)·sin(dec))
+                                 ─────────────────────────────
+                                      cos(lat)·cos(dec)
 ═══════════════════════════════════════════════════════════ */
-const METHOD_PARAMS = {
-  MWL:  { fajr: 18,   isha: 17,   ishaMin: null },
-  ISNA: { fajr: 15,   isha: 15,   ishaMin: null },
-  UMQ:  { fajr: 18.5, isha: null, ishaMin: 90   },
-  EGY:  { fajr: 19.5, isha: 17.5, ishaMin: null },
-  KAR:  { fajr: 18,   isha: 18,   ishaMin: null },
+const M_PARAMS = {
+  MWL:  {fajr:18,   isha:17,   ishaMin:null},
+  ISNA: {fajr:15,   isha:15,   ishaMin:null},
+  UMQ:  {fajr:18.5, isha:null, ishaMin:90},
+  EGY:  {fajr:19.5, isha:17.5, ishaMin:null},
+  KAR:  {fajr:18,   isha:18,   ishaMin:null},
 };
 
-function julianDay(year, month, day) {
-  if (month <= 2) { year--; month += 12; }
-  const A = Math.floor(year / 100);
-  const B = 2 - A + Math.floor(A / 4);
-  return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
+function julianDay(y, m, d) {
+  if (m <= 2) { y--; m += 12; }
+  const A = Math.floor(y/100), B = 2 - A + Math.floor(A/4);
+  return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + d + B - 1524.5;
 }
 
-function sunPosition(jd) {
-  const D  = jd - 2451545.0;
-  const g  = (357.529 + 0.98560028 * D) % 360;
-  const q  = (280.459 + 0.98564736 * D) % 360;
-  const L  = (q + 1.915 * Math.sin(g * D2R) + 0.020 * Math.sin(2 * g * D2R)) % 360;
-  const e  = 23.439 - 0.00000036 * D;
-  const RA = Math.atan2(Math.cos(e * D2R) * Math.sin(L * D2R), Math.cos(L * D2R)) * R2D / 15;
-  const dec = Math.asin(Math.sin(e * D2R) * Math.sin(L * D2R)) * R2D;
-  const EqT = q / 15 - ((RA + 360) % 24);
+function sunPos(jd) {
+  const D = jd - 2451545.0;
+  const g = (357.529 + 0.98560028*D) % 360;
+  const q = (280.459 + 0.98564736*D) % 360;
+  const L = (q + 1.915*Math.sin(g*D2R) + 0.020*Math.sin(2*g*D2R)) % 360;
+  const e = 23.439 - 0.00000036*D;
+  const RA = Math.atan2(Math.cos(e*D2R)*Math.sin(L*D2R), Math.cos(L*D2R)) * R2D / 15;
+  const dec = Math.asin(Math.sin(e*D2R)*Math.sin(L*D2R)) * R2D;
+  const EqT = q/15 - ((RA + 360) % 24);
   return { dec, eqt: EqT };
 }
 
+// FIXED: use sin(alt), not cos(alt)
 function hourAngle(lat, dec, alt) {
-  const num = Math.cos(alt * D2R) - Math.sin(lat * D2R) * Math.sin(dec * D2R);
-  const den = Math.cos(lat * D2R) * Math.cos(dec * D2R);
-  if (Math.abs(num / den) > 1) return null;
-  return Math.acos(num / den) * R2D;
+  const n = Math.sin(alt*D2R) - Math.sin(lat*D2R)*Math.sin(dec*D2R);
+  const d = Math.cos(lat*D2R) * Math.cos(dec*D2R);
+  if (d === 0 || Math.abs(n/d) > 1) return null;
+  return Math.acos(n/d) * R2D;
 }
 
-function asrHA(lat, dec, shadow) {
-  const alt = Math.atan(1 / (shadow + Math.tan(Math.abs(lat - dec) * D2R))) * R2D;
-  return hourAngle(lat, dec, alt);
+function asrAngle(lat, dec, shadow) {
+  const a = Math.atan(1 / (shadow + Math.tan(Math.abs(lat - dec)*D2R))) * R2D;
+  return hourAngle(lat, dec, a);
 }
 
-function calcPrayerTimes(lat, lng, date, method) {
-  const p   = METHOD_PARAMS[method] || METHOD_PARAMS.MWL;
-  const jd  = julianDay(date.getFullYear(), date.getMonth() + 1, date.getDate());
-  const { dec, eqt } = sunPosition(jd);
+function calcTimes(lat, lng, date, methodId) {
+  const p   = M_PARAMS[methodId] || M_PARAMS.MWL;
+  const jd  = julianDay(date.getFullYear(), date.getMonth()+1, date.getDate());
+  const {dec, eqt} = sunPos(jd);
+  const tz  = -date.getTimezoneOffset() / 60;
+  const noon = 12 - lng/15 - eqt + tz;
 
-  const tz    = -date.getTimezoneOffset() / 60;
-  const noon  = 12 - lng / 15 - eqt + tz;
-
-  const haFajr   = hourAngle(lat, dec, -p.fajr);
-  const haSunrise= hourAngle(lat, dec, -0.833);
-  const haAsr    = asrHA(lat, dec, 1);          // Shafi'i shadow = 1
-  const haMaghrib= hourAngle(lat, dec, -0.833);
+  const haFajr    = hourAngle(lat, dec, -p.fajr);
+  const haSunrise = hourAngle(lat, dec, -0.833);
+  const haAsr     = asrAngle(lat, dec, 1);
+  const haMaghrib = hourAngle(lat, dec, -0.833);
 
   let ishaOffset;
   if (p.ishaMin != null) {
     ishaOffset = p.ishaMin / 60;
   } else {
     const haIsha = hourAngle(lat, dec, -p.isha);
-    ishaOffset = haIsha != null ? haIsha / 15 : 1.5;
+    ishaOffset = haIsha != null ? haIsha/15 : 1.5;
   }
 
-  const fajr    = noon - (haFajr    != null ? haFajr    / 15 : 1.5);
-  const sunrise = noon - (haSunrise != null ? haSunrise / 15 : 0.27);
-  const dhuhr   = noon + 0.0167;  // ~1 min after solar noon
-  const asr     = noon + (haAsr    != null ? haAsr    / 15 : 3.5);
-  const maghrib = noon + (haMaghrib!= null ? haMaghrib/ 15 : 0.27);
-  const isha    = p.ishaMin != null ? maghrib + ishaOffset
-                                    : noon + ishaOffset;
+  // Safe fallbacks when hour angle is undefined (polar regions or extreme dates)
+  const fajr    = noon - (haFajr    != null ? haFajr/15    : 1.5);
+  const dhuhr   = noon + 0.0167;
+  const asr     = noon + (haAsr     != null ? haAsr/15     : 3.5);
+  const maghrib = noon + (haMaghrib != null ? haMaghrib/15 : 0.278);
+  const isha    = p.ishaMin != null ? maghrib + ishaOffset : noon + ishaOffset;
 
+  // Convert decimal-hours-since-midnight to a Date object
   function toDate(h) {
-    const t = new Date(date);
-    t.setHours(0, 0, 0, 0);
-    const mins = Math.round(h * 60);
-    t.setMinutes(t.getMinutes() + mins);
-    return t;
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setMinutes(Math.round(h * 60));   // setMinutes on midnight Date is clean
+    return d;
   }
 
   return {
     Fajr: toDate(fajr), Dhuhr: toDate(dhuhr),
-    Asr: toDate(asr), Maghrib: toDate(maghrib), Isha: toDate(isha),
+    Asr:  toDate(asr),  Maghrib: toDate(maghrib), Isha: toDate(isha),
   };
 }
 
-/* ════════════════════════════════════════════════════════
-   LOCATION
+/* ═══════════════════════════════════════════════════════════
+   TIME FORMATTING
 ═══════════════════════════════════════════════════════════ */
-function getLocation() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject('Geolocation not supported by this browser.'); return; }
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        let city = `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
-        try {
-          const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-          const d = await r.json();
-          const a = d.address || {};
-          city = [a.city || a.town || a.village || a.county, a.country].filter(Boolean).join(', ') || city;
-        } catch(e) {}
-        resolve({ lat, lng, city });
-      },
-      err => {
-        const msgs = ['','Permission denied — enable location access.','Position unavailable.','Location request timed out.'];
-        reject(msgs[err.code] || 'Location error.');
-      },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
-  });
-}
-
-/* ════════════════════════════════════════════════════════
-   TIME FORMAT
-═══════════════════════════════════════════════════════════ */
-function fmtTime(dt) {
+function fmt(dt) {
   if (!dt) return '--:--';
   if (S.use24h) {
-    return dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    const h = dt.getHours(), m = dt.getMinutes();
+    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
   }
-  return dt.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+  let h = dt.getHours(), m = dt.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
 function fmtDate(dt) {
-  return dt.toLocaleDateString('en-MY', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  return dt.toLocaleDateString('en-MY', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
 
-/* ════════════════════════════════════════════════════════
-   COMPASS CANVAS  (CustomPainter equivalent)
+function hijriDate(dt) {
+  try {
+    return dt.toLocaleDateString('en-u-ca-islamic', {day:'numeric',month:'long',year:'numeric'});
+  } catch(e) {
+    // Tabular Islamic calendar fallback
+    const jd = julianDay(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+    const l = jd - 1948440 + 10632;
+    const n = Math.floor((l-1)/10631);
+    const r = l - 10631*n + 354;
+    const j = Math.floor((10985-r)/5965) + 1;
+    const k = Math.floor((r - 5*j + 8028) / 1447);
+    const i = Math.floor((r - 5*j + 8028 - 1447*k)*30/44320) + 1;
+    const hY = 30*(n-1)+k+1;
+    const MONTHS = ['Muharram','Safar',"Rabi' I","Rabi' II",'Jumada I','Jumada II',
+                    'Rajab',"Sha'ban",'Ramadan','Shawwal',"Dhu al-Qi'dah",'Dhu al-Hijjah'];
+    return `${j} ${MONTHS[i-1]||''} ${hY} AH`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOCATION
+═══════════════════════════════════════════════════════════ */
+async function getLocation() {
+  if (!navigator.geolocation) throw 'Geolocation is not supported by this browser.';
+  return new Promise((res, rej) => {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const {latitude:lat, longitude:lng} = pos.coords;
+      let city = `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const j = await r.json();
+        const a = j.address||{};
+        city = [a.city||a.town||a.village||a.county, a.country].filter(Boolean).join(', ') || city;
+      } catch(e){}
+      res({lat, lng, city});
+    }, err => {
+      const m = ['','Location permission denied. Please allow access in browser settings.',
+        'Position unavailable.','Location request timed out.'];
+      rej(m[err.code]||'Location error.');
+    }, {enableHighAccuracy:true, timeout:15000});
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPASS CANVAS
 ═══════════════════════════════════════════════════════════ */
 const canvas = document.getElementById('compassCanvas');
 const ctx    = canvas.getContext('2d');
 
-function isDark() { return S.darkMode; }
-
 function drawCompass(heading) {
   const W = canvas.width, H = canvas.height;
-  const cx = W / 2, cy = H / 2, r = W / 2 - 6;
+  const cx = W/2, cy = H/2, r = W/2 - 8;
   ctx.clearRect(0, 0, W, H);
+  const dk = !document.documentElement.classList.contains('light');
 
-  // The dial rotates so that the N marker always points to geographic North.
-  // heading = where the phone's top is pointing (degrees clockwise from North).
-  // Rotating the dial by -heading keeps North fixed on screen.
+  /* ── Rotating dial ── */
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(-heading * D2R);
+  ctx.rotate(-heading * D2R);   // dial rotates opposite to heading → N stays fixed on screen
 
-  // Background
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.fillStyle = isDark() ? '#0f1e17' : '#f0f6f2';
-  ctx.fill();
+  // Background disc
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+  ctx.fillStyle = dk ? '#0f1e17' : '#f2f7f3'; ctx.fill();
 
   // Outer ring
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.strokeStyle = isDark() ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+  ctx.strokeStyle = dk ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.15)';
+  ctx.lineWidth = 3; ctx.stroke();
 
-  // Degree ring background band
-  ctx.beginPath();
-  ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
-  ctx.strokeStyle = isDark() ? 'rgba(200,168,75,0.08)' : 'rgba(160,120,32,0.08)';
-  ctx.lineWidth = 32;
-  ctx.stroke();
+  // Gold degree band
+  ctx.beginPath(); ctx.arc(0,0,r-2,0,Math.PI*2);
+  ctx.strokeStyle = dk ? 'rgba(200,168,75,.07)' : 'rgba(160,120,32,.07)';
+  ctx.lineWidth = 30; ctx.stroke();
 
-  // Ticks
-  for (let i = 0; i < 360; i += 5) {
-    const isMajor = i % 45 === 0;
-    const isMed   = i % 15 === 0;
-    const len  = isMajor ? 18 : isMed ? 12 : 6;
-    const from = r - 4;
-    const to   = from - len;
-    const ang  = i * D2R;
+  // Tick marks every 5°
+  for (let i=0; i<360; i+=5) {
+    const maj = i%45===0, med = i%15===0;
+    const len = maj ? 18 : med ? 11 : 5;
+    const a = i*D2R, ro = r-4, ri = ro-len;
     ctx.beginPath();
-    ctx.moveTo(Math.sin(ang) * from, -Math.cos(ang) * from);
-    ctx.lineTo(Math.sin(ang) * to,   -Math.cos(ang) * to);
-    ctx.strokeStyle = isMajor
-      ? (isDark() ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)')
-      : isMed
-        ? (isDark() ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)')
-        : (isDark() ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)');
-    ctx.lineWidth = isMajor ? 2.5 : 1.5;
-    ctx.stroke();
+    ctx.moveTo(Math.sin(a)*ro, -Math.cos(a)*ro);
+    ctx.lineTo(Math.sin(a)*ri, -Math.cos(a)*ri);
+    ctx.strokeStyle = maj
+      ? (dk?'rgba(255,255,255,.75)':'rgba(0,0,0,.6)')
+      : med ? (dk?'rgba(255,255,255,.35)':'rgba(0,0,0,.3)')
+            : (dk?'rgba(255,255,255,.1)' :'rgba(0,0,0,.12)');
+    ctx.lineWidth = maj ? 2.5 : 1.5; ctx.stroke();
   }
 
-  // Cardinals
-  const cards = [
-    [0,   'N', true ],
-    [45,  'NE',false],
-    [90,  'E', false],
-    [135, 'SE',false],
-    [180, 'S', false],
-    [225, 'SW',false],
-    [270, 'W', false],
-    [315, 'NW',false],
-  ];
-  cards.forEach(([deg, label, isN]) => {
-    const ang = deg * D2R;
-    const dist = r - 44;
-    const x = Math.sin(ang) * dist;
-    const y = -Math.cos(ang) * dist;
+  // Cardinal labels — on the dial, rotate with it naturally
+  [[0,'N',true],[45,'NE',false],[90,'E',false],[135,'SE',false],
+   [180,'S',false],[225,'SW',false],[270,'W',false],[315,'NW',false]
+  ].forEach(([deg,label,isN]) => {
+    const a = deg*D2R, dist = r-42;
     ctx.save();
-    ctx.translate(x, y);
-    // Labels stay fixed on the dial — no counteracting rotation needed.
-    // They rotate with the dial so N always reads at the top when facing North.
-    ctx.fillStyle = isN ? '#e05555' : (isDark() ? '#d0e0d4' : '#1a3020');
-    ctx.font = `${isN ? 'bold ' : ''}${label.length === 1 ? '28' : '16'}px -apple-system,sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, 0, 0);
+    ctx.translate(Math.sin(a)*dist, -Math.cos(a)*dist);
+    ctx.fillStyle = isN ? '#e05555' : (dk?'#cce0d0':'#1a3020');
+    ctx.font = `${isN?'bold ':''}${label.length===1?'30':'15'}px -apple-system,sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(label,0,0);
     ctx.restore();
   });
 
-  // Qiblah marker on ring
+  // Qiblah arc + 🕋 emoji (on the dial, moves with it)
   if (S.qiblahAz != null) {
     const qa = S.qiblahAz * D2R;
-    const spanR = 12 * D2R;
+    const span = 11 * D2R;
     ctx.beginPath();
-    ctx.arc(0, 0, r - 4, qa - spanR - Math.PI/2, qa + spanR - Math.PI/2);
-    ctx.strokeStyle = S.aligned ? '#2ecc7a' : '#1a7a47';
-    ctx.lineWidth = 8;
-    ctx.lineCap = 'round';
-    ctx.stroke();
+    ctx.arc(0,0,r-4, qa-span-Math.PI/2, qa+span-Math.PI/2);
+    ctx.strokeStyle = S.aligned ? '#2ecc7a' : '#22994f';
+    ctx.lineWidth = 9; ctx.lineCap='round'; ctx.stroke();
 
-    // Kaabah emoji on inner ring — rotates with the dial, no extra transform needed
-    const emojiDist = r - 56;
-    const ex = Math.sin(qa) * emojiDist;
-    const ey = -Math.cos(qa) * emojiDist;
+    const ed = r - 55;
     ctx.save();
-    ctx.translate(ex, ey);
-    ctx.font = '26px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🕋', 0, 0);
+    ctx.translate(Math.sin(qa)*ed, -Math.cos(qa)*ed);
+    ctx.font='28px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🕋',0,0);
     ctx.restore();
   }
 
-  // North needle — counter-rotate by +heading so it always points to screen top (North).
-  // The dial rotates underneath it; the needle stays fixed in screen space.
-  ctx.save();
-  ctx.rotate(heading * D2R);
-
-  const nLen = r * 0.52, sLen = r * 0.24;
-  ctx.beginPath();
-  ctx.moveTo(0, -nLen);
-  ctx.lineTo(-9, 0);
-  ctx.lineTo(9, 0);
-  ctx.closePath();
-  ctx.fillStyle = '#e05555';
-  ctx.fill();
-  ctx.strokeStyle = isDark() ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // South tail
-  ctx.beginPath();
-  ctx.moveTo(0, sLen);
-  ctx.lineTo(-7, 0);
-  ctx.lineTo(7, 0);
-  ctx.closePath();
-  ctx.fillStyle = isDark() ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)';
-  ctx.fill();
-
-  ctx.restore(); // end needle counter-rotation
-
-  // Centre cap (above needle, in dial-rotation context)
-  ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  ctx.strokeStyle = isDark() ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
   ctx.restore(); // end dial rotation
+
+  /* ── Fixed needle (counter-rotates → stays pointing up = North) ── */
+  ctx.save();
+  ctx.translate(cx, cy);
+  // Needle does NOT rotate with the dial — it always points to screen top
+  // (which represents geographic North since the dial rotates beneath it)
+
+  const nL = r*0.52, sL = r*0.24;
+
+  // Red north tip
+  ctx.beginPath();
+  ctx.moveTo(0, -nL); ctx.lineTo(-9,0); ctx.lineTo(9,0); ctx.closePath();
+  ctx.fillStyle='#e05555'; ctx.fill();
+  ctx.strokeStyle = dk?'rgba(0,0,0,.35)':'rgba(0,0,0,.2)';
+  ctx.lineWidth=1; ctx.stroke();
+
+  // Grey south tail
+  ctx.beginPath();
+  ctx.moveTo(0,sL); ctx.lineTo(-7,0); ctx.lineTo(7,0); ctx.closePath();
+  ctx.fillStyle = dk?'rgba(255,255,255,.55)':'rgba(0,0,0,.35)'; ctx.fill();
+
+  // White centre cap
+  ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle = dk?'rgba(255,255,255,.25)':'rgba(0,0,0,.15)';
+  ctx.lineWidth=1.5; ctx.stroke();
+
+  ctx.restore();
 }
 
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    COMPASS SENSOR
 ═══════════════════════════════════════════════════════════ */
-let compassPermGranted = false;
-
-async function requestCompassPermission() {
+async function reqCompassPerm() {
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      const res = await DeviceOrientationEvent.requestPermission();
-      compassPermGranted = res === 'granted';
-    } catch(e) { compassPermGranted = false; }
-  } else {
-    compassPermGranted = true;
+    try { return (await DeviceOrientationEvent.requestPermission()) === 'granted'; }
+    catch(e) { return false; }
   }
+  return true;
 }
 
 function startCompass() {
-  let lastHeading = 0;
-  const smooth = 0.3; // higher = more responsive, lower = smoother
-
-  window.addEventListener('deviceorientationabsolute', onOrient, true);
-  window.addEventListener('deviceorientation', onOrient, true);
-
+  let last = 0;
   function onOrient(e) {
     let h;
     if (e.webkitCompassHeading !== undefined) {
-      h = e.webkitCompassHeading;               // iOS
-    } else if (e.absolute && e.alpha != null) {
-      h = (360 - e.alpha) % 360;                // Android absolute
+      h = e.webkitCompassHeading;            // iOS
     } else if (e.alpha != null) {
-      h = (360 - e.alpha) % 360;
+      h = (360 - e.alpha) % 360;            // Android absolute/relative
     } else return;
 
-    // Smooth
-    let d = h - lastHeading;
+    // Smooth shortest-path interpolation
+    let d = h - last;
     if (d >  180) d -= 360;
     if (d < -180) d += 360;
-    lastHeading += d * smooth;
-    lastHeading  = (lastHeading + 360) % 360;
+    last = (last + d*0.3 + 360) % 360;
 
-    S.heading = lastHeading;
-    drawCompass(S.heading);
-    checkAlignment(S.heading);
+    S.heading = last;
+    drawCompass(last);
+    checkAlign(last);
   }
-
-  // If no sensor events fire within 2s (desktop / unsupported browser),
-  // stay at heading 0 — dial shows North at top, static, which is correct behaviour.
-  let demoTimer = setTimeout(() => {
-    drawCompass(0); // static — no spinning
-  }, 2000);
-
-  window.addEventListener('deviceorientationabsolute', () => clearTimeout(demoTimer), { once: true });
-  window.addEventListener('deviceorientation',         () => clearTimeout(demoTimer), { once: true });
+  window.addEventListener('deviceorientationabsolute', onOrient, true);
+  window.addEventListener('deviceorientation',         onOrient, true);
 }
 
-const ALIGN_TOL = 3; // degrees
+const ALIGN_TOL = 3;
 
-function checkAlignment(heading) {
+function checkAlign(heading) {
   if (S.qiblahAz == null) return;
   let diff = ((S.qiblahAz - heading) % 360 + 360) % 360;
   if (diff > 180) diff = 360 - diff;
 
-  const nowAligned = diff <= ALIGN_TOL;
-  if (nowAligned && !S.aligned && !S.popupShown) {
-    S.aligned = true;
-    S.popupShown = true;
+  const now = diff <= ALIGN_TOL;
+  if (now && !S.aligned && !S.popupShown) {
+    S.aligned = true; S.popupShown = true;
     updateAlignUI();
-    document.getElementById('aligned-overlay').classList.add('visible');
-  } else if (!nowAligned && S.aligned) {
-    S.aligned = false;
-    S.popupShown = false;
+    document.getElementById('overlay').classList.add('visible');
+  } else if (!now && S.aligned) {
+    S.aligned = false; S.popupShown = false;
     updateAlignUI();
   }
 }
@@ -973,319 +920,267 @@ function updateAlignUI() {
     banner.classList.add('aligned');
     arrow.classList.add('aligned');
   } else {
-    banner.textContent = 'Rotate until the green marker aligns with the arrow';
+    banner.textContent = 'Rotate until the green 🕋 marker meets the arrow above';
     banner.classList.remove('aligned');
     arrow.classList.remove('aligned');
   }
 }
 
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    INIT COMPASS
 ═══════════════════════════════════════════════════════════ */
 async function initCompass() {
-  show('compass-loading'); hide('compass-error'); hide('compass-content');
+  el('compass-loading').style.display='flex';
+  el('compass-error').style.display='none';
+  el('compass-content').style.display='none';
+
   try {
-    await requestCompassPermission();
+    await reqCompassPerm();
     const loc = await getLocation();
-    S.lat = loc.lat; S.lng = loc.lng; S.cityName = loc.city;
+    S.lat=loc.lat; S.lng=loc.lng; S.city=loc.city;
     S.qiblahAz = calcQiblah(loc.lat, loc.lng);
 
-    document.getElementById('compass-location').textContent = '📍 ' + loc.city;
-    document.getElementById('qiblah-deg').textContent = `Qiblah: ${S.qiblahAz.toFixed(1)}°`;
-    document.getElementById('compass-subtitle').textContent =
-      `Qiblah ${S.qiblahAz.toFixed(0)}° from North`;
+    el('compass-city').textContent = '📍 ' + loc.city;
+    el('qiblah-deg').textContent   = `Qiblah: ${S.qiblahAz.toFixed(1)}° from North`;
+    el('compass-subtitle').textContent = `Qiblah ${S.qiblahAz.toFixed(0)}°`;
 
-    hide('compass-loading');
-    showEl('compass-content');
+    el('compass-loading').style.display='none';
+    el('compass-content').style.display='flex';
     drawCompass(S.heading);
 
-    if (!S.compassInited) {
-      S.compassInited = true;
+    if (!S.compassStarted) {
+      S.compassStarted = true;
       startCompass();
     }
   } catch(err) {
-    hide('compass-loading');
-    showEl('compass-error');
-    document.getElementById('compass-error-msg').textContent = String(err);
+    el('compass-loading').style.display='none';
+    el('compass-error').style.display='flex';
+    el('compass-err-msg').textContent = String(err);
   }
 }
 
-/* ════════════════════════════════════════════════════════
-   PRAYER TIMES UI
+/* ═══════════════════════════════════════════════════════════
+   INIT PRAYER
 ═══════════════════════════════════════════════════════════ */
 async function initPrayer() {
-  show('prayer-loading'); hide('prayer-error'); hide('prayer-content');
+  el('prayer-loading').style.display='flex';
+  el('prayer-error').style.display='none';
+  el('prayer-content').style.display='none';
+
   try {
     if (!S.lat) {
       const loc = await getLocation();
-      S.lat = loc.lat; S.lng = loc.lng; S.cityName = loc.city;
-      S.qiblahAz = calcQiblah(loc.lat, loc.lng);
+      S.lat=loc.lat; S.lng=loc.lng; S.city=loc.city;
+      if (!S.qiblahAz) S.qiblahAz = calcQiblah(loc.lat, loc.lng);
     }
     const now = new Date();
-    const times = calcPrayerTimes(S.lat, S.lng, now, S.calcMethod);
-    S.prayerTimes = times;
+    const times = calcTimes(S.lat, S.lng, now, S.method);
+    S.times = times;
 
-    document.getElementById('prayer-location').textContent = '📍 ' + S.cityName;
-    document.getElementById('prayer-date').textContent = fmtDate(now);
-    document.getElementById('hijri-date').textContent = getHijriDate(now);
-    document.getElementById('prayer-subtitle').textContent = S.cityName || 'Daily prayer schedule';
+    el('prayer-city').textContent  = '📍 ' + S.city;
+    el('prayer-date').textContent  = fmtDate(now);
+    el('prayer-hijri').textContent = hijriDate(now);
+    el('prayer-subtitle').textContent = S.city || 'Daily schedule';
 
-    renderPrayerList(times, now);
-    hide('prayer-loading');
-    showEl('prayer-content');
+    renderPrayer(times, now);
+    el('prayer-loading').style.display='none';
+    el('prayer-content').style.display='block';
+
+    scheduleAlarms();
   } catch(err) {
-    hide('prayer-loading');
-    showEl('prayer-error');
-    document.getElementById('prayer-error-msg').textContent = String(err);
+    el('prayer-loading').style.display='none';
+    el('prayer-error').style.display='flex';
+    el('prayer-err-msg').textContent = String(err);
   }
 }
 
-function renderPrayerList(times, now) {
-  const list = document.getElementById('prayer-list');
-  list.innerHTML = '';
+/* ═══════════════════════════════════════════════════════════
+   RENDER PRAYER LIST
+═══════════════════════════════════════════════════════════ */
+function renderPrayer(times, now) {
+  // Find current (last passed) and next (first upcoming)
+  let cur=null, nxt=null;
+  for (const p of PRAYERS) { if (times[p] && times[p]<=now) cur=p; }
+  for (const p of PRAYERS) { if (times[p] && times[p]>now)  { nxt=p; break; } }
 
-  // Find current and next prayer
-  let currentP = null, nextP = null;
-  for (let i = 0; i < PRAYERS.length; i++) {
-    const t = times[PRAYERS[i]];
-    if (t && t <= now) currentP = PRAYERS[i];
-  }
-  for (let i = 0; i < PRAYERS.length; i++) {
-    const t = times[PRAYERS[i]];
-    if (t && t > now) { nextP = PRAYERS[i]; break; }
-  }
+  const list = el('prayer-list');
+  list.innerHTML = '';
 
   PRAYERS.forEach(name => {
     const t = times[name];
-    const isCurrent = name === currentP;
-    const isNext    = name === nextP;
+    const isCur = name===cur, isNxt = name===nxt;
 
     const card = document.createElement('div');
-    card.className = 'prayer-card' + (isCurrent ? ' current' : isNext ? ' next' : '');
+    card.className = 'prayer-card' + (isCur?' is-current':isNxt?' is-next':'');
+
+    const badge = isCur ? '<span class="p-badge">Current</span>'
+                : isNxt ? '<span class="p-badge">Next</span>' : '';
 
     card.innerHTML = `
-      <span class="prayer-icon">${PRAYER_ICONS[name]}</span>
-      <div class="prayer-info">
-        <div class="prayer-name">${name}</div>
-        ${isCurrent ? '<div class="prayer-label">Current</div>' : ''}
-        ${isNext    ? '<div class="prayer-label">Next</div>'    : ''}
+      <span class="p-icon">${P_ICON[name]}</span>
+      <div class="p-info">
+        <div class="p-name">${name}</div>
+        ${badge}
       </div>
-      <span class="prayer-time">${fmtTime(t)}</span>
-      <button class="alarm-btn ${S.alarms[name] ? 'on' : ''}" data-prayer="${name}" title="${S.alarms[name] ? 'Disable alarm' : 'Enable alarm'}">
-        ${S.alarms[name] ? '⏰' : '🔕'}
+      <span class="p-time">${fmt(t)}</span>
+      <button class="alarm-btn${S.alarms[name]?' on':''}" data-p="${name}"
+        title="${S.alarms[name]?'Disable alarm':'Enable alarm'}">
+        ${S.alarms[name]?'⏰':'🔕'}
       </button>`;
 
     list.appendChild(card);
   });
 
+  // Alarm toggle on cards
   list.querySelectorAll('.alarm-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const p = btn.dataset.prayer;
+      const p = btn.dataset.p;
       S.alarms[p] = !S.alarms[p];
-      savePrefs();
-      btn.className = 'alarm-btn' + (S.alarms[p] ? ' on' : '');
+      savePref(); syncAlarmToggles(); scheduleAlarms();
+      btn.className = 'alarm-btn' + (S.alarms[p]?' on':'');
       btn.textContent = S.alarms[p] ? '⏰' : '🔕';
       btn.title = S.alarms[p] ? 'Disable alarm' : 'Enable alarm';
-      syncSettingsAlarms();
-      scheduleAlarms();
     });
   });
 }
 
-/* ════════════════════════════════════════════════════════
-   NOTIFICATIONS (Web API)
+/* ═══════════════════════════════════════════════════════════
+   NOTIFICATIONS
 ═══════════════════════════════════════════════════════════ */
-const scheduledAlarms = {};
-
+const alarmTimers = {};
 async function scheduleAlarms() {
-  if (!S.prayerTimes) return;
-  if (Notification && Notification.permission !== 'granted') {
-    try { await Notification.requestPermission(); } catch(e) {}
+  if (!S.times) return;
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch(e){}
   }
-  Object.values(scheduledAlarms).forEach(id => clearTimeout(id));
-
-  PRAYERS.forEach(name => {
+  Object.values(alarmTimers).forEach(clearTimeout);
+  PRAYERS.forEach((name,i) => {
     if (!S.alarms[name]) return;
-    const t = S.prayerTimes[name];
-    if (!t) return;
+    const t = S.times[name]; if (!t) return;
     const ms = t.getTime() - Date.now();
     if (ms < 0 || ms > 86400000) return;
-    scheduledAlarms[name] = setTimeout(() => {
-      if (Notification && Notification.permission === 'granted') {
+    alarmTimers[name] = setTimeout(() => {
+      if (typeof Notification !== 'undefined' && Notification.permission==='granted') {
         new Notification(`Prayer Time — ${name}`, {
           body: `It is time for ${name} prayer.`,
-          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🕋</text></svg>',
+          icon: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🕋%3C/text%3E%3C/svg%3E`,
         });
       }
     }, ms);
   });
 }
 
-/* ════════════════════════════════════════════════════════
-   HIJRI DATE  (approximate Tabular Islamic Calendar)
-═══════════════════════════════════════════════════════════ */
-function getHijriDate(date) {
-  try {
-    return date.toLocaleDateString('en-US', {
-      calendar: 'islamic',
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-  } catch(e) {
-    // Fallback: rough approximation
-    const jd = julianDay(date.getFullYear(), date.getMonth()+1, date.getDate());
-    const l  = jd - 1948440 + 10632;
-    const n  = Math.floor((l-1)/10631);
-    const r  = l - 10631*n + 354;
-    const j  = Math.floor((10985-r)/5965)+1;
-    const k  = Math.floor((r-5*j+8028)/1447);
-    const i  = Math.floor((r-5*j+8028-1447*k)*30/44320)+1;
-    const hYear= 30*(n-1)+k+1; const hMonth=i; const hDay=j;
-    const MONTHS=['Muharram','Safar','Rabi I','Rabi II','Jumada I','Jumada II',
-                  'Rajab',"Sha'ban",'Ramadan','Shawwal','Dhu al-Qi\'dah','Dhu al-Hijjah'];
-    return `${hDay} ${MONTHS[hMonth-1] || ''} ${hYear} AH`;
-  }
-}
-
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    SETTINGS UI
 ═══════════════════════════════════════════════════════════ */
 function buildSettings() {
-  // Alarm toggles
-  const alarmsEl = document.getElementById('alarm-toggles');
-  alarmsEl.innerHTML = '';
+  // Alarm rows
+  const ar = el('alarm-rows'); ar.innerHTML='';
   PRAYERS.forEach(name => {
     const row = document.createElement('div');
-    row.className = 'setting-row';
-    row.style.marginBottom = '6px';
-    const id = 'alarm-' + name;
+    row.className='setting-row'; row.style.marginBottom='5px';
+    const id = 'al-'+name;
     row.innerHTML = `
-      <span class="setting-icon">${PRAYER_ICONS[name]}</span>
-      <div class="setting-info">
-        <div class="setting-title">${name}</div>
-        <div class="setting-sub">Notify at prayer time</div>
+      <span class="s-icon">${P_ICON[name]}</span>
+      <div class="s-info">
+        <div class="s-title">${name}</div>
+        <div class="s-sub">Notify at prayer time</div>
       </div>
       <label class="toggle">
-        <input type="checkbox" id="${id}" ${S.alarms[name] ? 'checked' : ''}>
+        <input type="checkbox" id="${id}" ${S.alarms[name]?'checked':''}>
         <div class="toggle-track"></div>
         <div class="toggle-thumb"></div>
       </label>`;
-    alarmsEl.appendChild(row);
+    ar.appendChild(row);
     row.querySelector('input').addEventListener('change', e => {
-      S.alarms[name] = e.target.checked;
-      savePrefs();
-      scheduleAlarms();
-      // sync prayer list
-      if (S.prayerTimes) renderPrayerList(S.prayerTimes, new Date());
+      S.alarms[name]=e.target.checked;
+      savePref(); scheduleAlarms();
+      if (S.times) renderPrayer(S.times, new Date());
     });
   });
 
   // Method options
-  const methodEl = document.getElementById('method-options');
-  methodEl.innerHTML = '';
+  const mo = el('method-opts'); mo.innerHTML='';
   METHODS.forEach(m => {
-    const div = document.createElement('div');
-    div.className = 'method-opt' + (S.calcMethod === m.id ? ' selected' : '');
-    div.dataset.id = m.id;
-    div.innerHTML = `
-      <div class="method-radio"><div class="method-dot"></div></div>
-      <div><div class="method-name">${m.name}</div><div class="method-desc">${m.desc}</div></div>`;
-    div.addEventListener('click', () => {
-      S.calcMethod = m.id;
-      savePrefs();
-      methodEl.querySelectorAll('.method-opt').forEach(el => el.classList.remove('selected'));
-      div.classList.add('selected');
-      // Recalculate prayer times
-      if (S.lat) {
-        S.prayerTimes = null;
-        initPrayer();
-      }
+    const d = document.createElement('div');
+    d.className='method-opt'+(S.method===m.id?' sel':'');
+    d.innerHTML=`<div class="m-radio"><div class="m-dot"></div></div>
+      <div><div class="m-name">${m.name}</div><div class="m-desc">${m.desc}</div></div>`;
+    d.addEventListener('click', () => {
+      S.method=m.id; savePref();
+      mo.querySelectorAll('.method-opt').forEach(x=>x.classList.remove('sel'));
+      d.classList.add('sel');
+      if (S.lat) { S.times=null; initPrayer(); }
     });
-    methodEl.appendChild(div);
+    mo.appendChild(d);
   });
 }
 
-function syncSettingsAlarms() {
+function syncAlarmToggles() {
   PRAYERS.forEach(name => {
-    const el = document.getElementById('alarm-' + name);
-    if (el) el.checked = S.alarms[name];
+    const el2 = document.getElementById('al-'+name);
+    if (el2) el2.checked = S.alarms[name];
   });
 }
 
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    NAVIGATION
 ═══════════════════════════════════════════════════════════ */
-function show(id)   { document.getElementById(id).style.display = 'flex'; }
-function hide(id)   { document.getElementById(id).style.display = 'none'; }
-function showEl(id) { document.getElementById(id).style.display = 'flex'; }
+function el(id) { return document.getElementById(id); }
 
-const SCREENS = ['compass-screen','prayer-screen','settings-screen'];
 let prayerInited = false;
-
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    const target = tab.dataset.screen;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const target = tab.dataset.s;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    SCREENS.forEach(id => {
-      document.getElementById(id).classList.toggle('active', id === target);
+    ['compass-screen','prayer-screen','settings-screen'].forEach(id => {
+      document.getElementById(id).classList.toggle('active', id===target);
     });
-    if (target === 'prayer-screen' && !prayerInited) {
-      prayerInited = true;
-      initPrayer();
+    if (target==='prayer-screen' && !prayerInited) {
+      prayerInited=true; initPrayer();
     }
   });
 });
 
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    EVENT WIRING
 ═══════════════════════════════════════════════════════════ */
-document.getElementById('refresh-compass').addEventListener('click', initCompass);
-document.getElementById('compass-retry').addEventListener('click', initCompass);
-document.getElementById('refresh-prayer').addEventListener('click', () => {
-  S.lat = null; initPrayer();
-});
-document.getElementById('prayer-retry').addEventListener('click', () => {
-  S.lat = null; initPrayer();
-});
-document.getElementById('popup-ok').addEventListener('click', () => {
-  document.getElementById('aligned-overlay').classList.remove('visible');
-});
-document.getElementById('aligned-overlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget)
-    document.getElementById('aligned-overlay').classList.remove('visible');
+el('refresh-compass').addEventListener('click', initCompass);
+el('compass-retry').addEventListener('click', initCompass);
+el('refresh-prayer').addEventListener('click', () => { S.lat=null; initPrayer(); });
+el('prayer-retry').addEventListener('click',   () => { S.lat=null; initPrayer(); });
+
+el('popup-ok').addEventListener('click', () => el('overlay').classList.remove('visible'));
+el('overlay').addEventListener('click', e => {
+  if (e.target===e.currentTarget) el('overlay').classList.remove('visible');
 });
 
-document.getElementById('dark-toggle').addEventListener('change', e => {
-  S.darkMode = e.target.checked;
-  applyTheme();
-  savePrefs();
-  drawCompass(S.heading);
+// Dark mode toggle (Settings)
+el('dark-toggle').addEventListener('change', e => {
+  S.dark=e.target.checked; applyTheme(); savePref();
+});
+// Dark mode toggle (Prayer screen header)
+el('theme-btn').addEventListener('click', () => {
+  S.dark=!S.dark; applyTheme(); savePref();
+  el('dark-toggle').checked=S.dark;
+});
+// 24h toggle
+el('h24-toggle').addEventListener('change', e => {
+  S.use24h=e.target.checked; savePref();
+  if (S.times) renderPrayer(S.times, new Date());
 });
 
-document.getElementById('h24-toggle').addEventListener('change', e => {
-  S.use24h = e.target.checked;
-  savePrefs();
-  if (S.prayerTimes) renderPrayerList(S.prayerTimes, new Date());
-});
+window.addEventListener('resize', () => drawCompass(S.heading));
 
-document.getElementById('toggle-theme').addEventListener('click', () => {
-  S.darkMode = !S.darkMode;
-  applyTheme();
-  savePrefs();
-  document.getElementById('dark-toggle').checked = S.darkMode;
-  drawCompass(S.heading);
-});
-
-/* ════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    BOOT
 ═══════════════════════════════════════════════════════════ */
-loadPrefs();
+loadPref();
 applyTheme();
 buildSettings();
+el('h24-toggle').checked = S.use24h;
 initCompass();
-
-// Redraw on resize
-window.addEventListener('resize', () => drawCompass(S.heading));
 </script>
 </body>
 </html>
