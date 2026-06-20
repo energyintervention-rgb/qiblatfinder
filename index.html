@@ -10,9 +10,10 @@
 <meta name="theme-color" id="meta-theme" content="#1a3a2a">
 <title>The Qiblat</title>
 
-<!-- PWA icons generated as inline SVG data URIs (no external files needed) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231a3a2a'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle'%3E🧭%3C/text%3E%3C/svg%3E">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a3a2a'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E🧭%3C/text%3E%3C/svg%3E">
+<!-- Icons and manifest are generated at boot via JS canvas (data: URIs not supported by iOS for apple-touch-icon) -->
+<link rel="apple-touch-icon" id="apple-touch-icon">
+<link rel="icon" id="favicon">
+<link rel="manifest" id="pwa-manifest">
 
 <style>
 /* ── Design tokens: dark (default) ──────────────────────── */
@@ -516,6 +517,80 @@ html.light .p-time { color: var(--gold2); }
 
 <script>
 'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   PWA ICONS + MANIFEST
+   apple-touch-icon does NOT accept data: URIs on iOS Safari.
+   We draw the icon on an offscreen canvas → toDataURL('image/png')
+   → set as href on the <link> tags. Manifest is a blob URL.
+═══════════════════════════════════════════════════════════ */
+function generateIcons() {
+  function drawIcon(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const x = c.getContext('2d');
+    const r = size * 0.18; // corner radius
+
+    // Background — dark green rounded rect
+    x.beginPath();
+    x.moveTo(r, 0); x.lineTo(size-r, 0);
+    x.quadraticCurveTo(size, 0, size, r);
+    x.lineTo(size, size-r);
+    x.quadraticCurveTo(size, size, size-r, size);
+    x.lineTo(r, size); x.quadraticCurveTo(0, size, 0, size-r);
+    x.lineTo(0, r); x.quadraticCurveTo(0, 0, r, 0);
+    x.closePath();
+    x.fillStyle = '#1a3a2a'; x.fill();
+
+    // Gold ring
+    x.beginPath(); x.arc(size/2, size/2, size*0.36, 0, Math.PI*2);
+    x.strokeStyle = '#c8a84b'; x.lineWidth = size*0.04; x.stroke();
+
+    // Compass emoji / symbol
+    x.font = `${size*0.38}px serif`;
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('🧭', size/2, size/2);
+
+    return c.toDataURL('image/png');
+  }
+
+  try {
+    const png192 = drawIcon(192);
+    const png180 = drawIcon(180);
+    const png32  = drawIcon(32);
+
+    // apple-touch-icon (iOS home screen)
+    const atEl = document.getElementById('apple-touch-icon');
+    if (atEl) atEl.href = png180;
+
+    // favicon
+    const favEl = document.getElementById('favicon');
+    if (favEl) { favEl.type = 'image/png'; favEl.href = png32; }
+
+    // Web App Manifest as blob
+    const manifest = {
+      name: 'The Qiblat',
+      short_name: 'Qiblat',
+      description: 'Qiblah compass and daily prayer times',
+      start_url: './',
+      display: 'standalone',
+      background_color: '#0d1f17',
+      theme_color: '#1a3a2a',
+      orientation: 'portrait',
+      icons: [
+        { src: png192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: png180, sizes: '180x180', type: 'image/png' },
+      ],
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    const mfEl = document.getElementById('pwa-manifest');
+    if (mfEl) mfEl.href = URL.createObjectURL(blob);
+  } catch(e) {
+    // Non-fatal — app works fine without PWA install capability
+    console.warn('Icon generation failed:', e);
+  }
+}
+generateIcons();
 /* ═══════════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════════ */
@@ -676,10 +751,13 @@ function calcTimes(lat, lng, date, methodId) {
   const maghrib = noon + (haMaghrib != null ? haMaghrib/15 : 0.278);
   const isha    = p.ishaMin != null ? maghrib + ishaOffset : noon + ishaOffset;
 
-  // Convert decimal-hours-since-midnight to a Date object
+  // Convert decimal local hours to a Date object
+  // Use explicit setHours to avoid any edge case with DST or setMinutes roll-over
   function toDate(h) {
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    d.setMinutes(Math.round(h * 60));   // setMinutes on midnight Date is clean
+    const totalMin = Math.round(h * 60);
+    const hh = Math.floor(totalMin / 60);
+    const mm = totalMin % 60;
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0, 0);
     return d;
   }
 
@@ -796,13 +874,15 @@ function drawCompass(heading) {
     ctx.lineWidth = maj ? 2.5 : 1.5; ctx.stroke();
   }
 
-  // Cardinal labels — on the dial, rotate with it naturally
+  // Cardinal labels — position rotates with dial, but text is counter-rotated
+  // so it stays upright and readable regardless of heading
   [[0,'N',true],[45,'NE',false],[90,'E',false],[135,'SE',false],
    [180,'S',false],[225,'SW',false],[270,'W',false],[315,'NW',false]
   ].forEach(([deg,label,isN]) => {
     const a = deg*D2R, dist = r-42;
     ctx.save();
     ctx.translate(Math.sin(a)*dist, -Math.cos(a)*dist);
+    ctx.rotate(heading * D2R); // counter-rotate text to keep it upright on screen
     ctx.fillStyle = isN ? '#e05555' : (dk?'#cce0d0':'#1a3020');
     ctx.font = `${isN?'bold ':''}${label.length===1?'30':'15'}px -apple-system,sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
