@@ -176,12 +176,12 @@ html, body {
 }
 .qiblah-info {
   font-size: 12px; color: var(--text3);
-  margin: 4px 0 8px; text-align: center;
+  margin: 4px 0 4px; text-align: center;
 }
 .compass-wrap {
   position: relative;
   width: min(74vw, 310px); height: min(74vw, 310px);
-  flex-shrink: 0; margin: 8px auto 0;
+  flex-shrink: 0; margin: 32px auto 0;
 }
 /* Fixed stop-arrow at top of frame — always points downward into dial */
 .stop-arrow {
@@ -354,6 +354,36 @@ html.light .p-time { color: var(--gold2); }
 </style>
 </head>
 <body>
+<!-- Startup permission popup — shown every launch, tap to unlock compass + GPS -->
+<div id="start-overlay" style="
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.88);
+  display:flex;align-items:center;justify-content:center;
+">
+  <div style="
+    background:var(--surface);border:1px solid var(--gold);
+    border-radius:24px;padding:32px 24px;
+    max-width:300px;width:88%;text-align:center;
+    animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  ">
+    <div style="font-size:56px;margin-bottom:12px">🧭</div>
+    <div style="font-size:20px;font-weight:700;color:var(--gold2);margin-bottom:8px">
+      The Qiblat
+    </div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px">
+      Tap <strong style="color:var(--text)">Start</strong> to allow location &amp; compass access.<br>
+      Required for Qiblah direction and prayer times.
+    </div>
+    <button id="start-btn" style="
+      width:100%;padding:14px;
+      background:var(--gold);color:#0d1f17;
+      border:none;border-radius:14px;
+      font-size:16px;font-weight:700;cursor:pointer;
+      transition:opacity 0.15s;
+    ">Start</button>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- ══════ COMPASS ══════ -->
@@ -1292,7 +1322,23 @@ loadPref();
 applyTheme();
 buildSettings();
 el('h24-toggle').checked = S.use24h;
-initCompass();
+
+// Startup popup — tap Start to grant orientation + location permission.
+// Shown every launch so iOS DeviceOrientationEvent.requestPermission()
+// is always triggered from a direct user gesture.
+el('start-btn').addEventListener('click', async () => {
+  // Dismiss overlay
+  const overlay = el('start-overlay');
+  overlay.style.transition = 'opacity 0.25s';
+  overlay.style.opacity = '0';
+  setTimeout(() => { overlay.style.display = 'none'; }, 260);
+
+  // Request compass permission (iOS requires user gesture — this is it)
+  await reqCompassPerm();
+
+  // Now init compass (also triggers GPS)
+  initCompass();
+});
 </script>
 </body>
 </html>
