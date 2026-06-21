@@ -213,6 +213,32 @@ canvas#compassCanvas { width: 100%; height: 100%; border-radius: 50%; display: b
   background: var(--green-dim); color: #fff; border-color: var(--green);
 }
 
+/* ── Kaabah top-view section ──────────────────────────── */
+.kaabah-divider {
+  width: calc(100% - 32px);
+  border: none; border-top: 1px solid var(--border);
+  margin: 10px 0 0; flex-shrink: 0;
+  transition: border-color 0.25s;
+}
+.kaabah-section {
+  display: flex; flex-direction: column;
+  align-items: center; flex: 1;
+  padding: 6px 16px 4px; width: 100%;
+  min-height: 0;
+}
+canvas#kaabahCanvas {
+  width: 100%; max-width: 220px;
+  height: auto; display: block;
+}
+.kaabah-face-label {
+  font-size: 12px; font-weight: 700;
+  color: var(--green); margin-top: 4px; text-align: center;
+}
+.kaabah-face-sub {
+  font-size: 10px; color: var(--text3);
+  text-align: center; margin-top: 2px;
+}
+
 /* ══════════════════════════════════════════════════════════
    PRAYER TIMES SCREEN
 ══════════════════════════════════════════════════════════ */
@@ -414,6 +440,12 @@ html.light .p-time { color: var(--gold2); }
       </div>
       <div class="align-banner" id="align-banner">
         Rotate until the green 🕋 marker meets the arrow above
+      </div>
+      <hr class="kaabah-divider">
+      <div class="kaabah-section">
+        <canvas id="kaabahCanvas" width="440" height="300"></canvas>
+        <div class="kaabah-face-label" id="kaabah-face-label">—</div>
+        <div class="kaabah-face-sub"  id="kaabah-face-sub">—</div>
       </div>
     </div>
   </div>
@@ -661,6 +693,7 @@ function applyTheme() {
 
   // Redraw canvas in new palette
   drawCompass(S.heading);
+  drawKaabah(S.qiblahAz);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -671,8 +704,175 @@ const R2D = 180 / Math.PI;
 const KAABAH_LAT = 21.4225, KAABAH_LNG = 39.8262;
 
 /* ═══════════════════════════════════════════════════════════
-   QIBLAH  (great-circle bearing)
+   KAABAH FACE LOOKUP
+   Kaabah walls face outward in these compass directions:
+   NE wall (Door/Bab):        5°–95°
+   SE wall (Hajar Aswad):    95°–185°
+   SW wall (Yemeni/Hatim): 185°–275°
+   NW wall (Shami):         275°–365°
 ═══════════════════════════════════════════════════════════ */
+function getKaabahFace(az) {
+  const a = ((az % 360) + 360) % 360;
+  if (a >= 5   && a < 95)  return { wall:'NE wall', detail:'Door (Bab) face',        sub:'Between Shami & Iraqi corners',    hi:'NE' };
+  if (a >= 95  && a < 185) return { wall:'SE wall', detail:'Hajar Aswad face',        sub:'Between Iraqi & Hajar Aswad',      hi:'SE' };
+  if (a >= 185 && a < 275) return { wall:'SW wall', detail:'Yemeni corner face',      sub:'Between Yemeni & Hajar Aswad',     hi:'SW' };
+  return                           { wall:'NW wall', detail:'Shami corner face',       sub:'Between Shami & Iraqi corners',    hi:'NW' };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAW KAABAH TOP VIEW
+   - Kaabah square: static, centred, rotated 30° (real orientation)
+   - "You" dot: positioned on orbit ring at qiblahAz angle
+   - Highlighted wall: green edge on Kaabah square
+   - Canvas: 440×300 logical pixels
+═══════════════════════════════════════════════════════════ */
+const kaabahCanvas = document.getElementById('kaabahCanvas');
+const kctx = kaabahCanvas.getContext('2d');
+
+function drawKaabah(qiblahAz) {
+  if (!qiblahAz && qiblahAz !== 0) return;
+  const W = kaabahCanvas.width, H = kaabahCanvas.height;
+  const cx = W / 2, cy = H / 2;
+  const ringR = 110;   // orbit ring radius
+  const boxH  = 70;   // Kaabah half-size before rotate
+  const dk = !document.documentElement.classList.contains('light');
+
+  kctx.clearRect(0, 0, W, H);
+
+  // Colours
+  const colText    = dk ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+  const colDim     = dk ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)';
+  const colRing    = dk ? '#2a5040' : '#c8d8cc';
+  const colBox     = dk ? '#1a3028' : '#e8f0e8';
+  const colBorder  = dk ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const colGreen   = '#2ecc7a';
+  const colGold    = '#c8a84b';
+
+  // ── Orbit ring (dashed) ──
+  kctx.beginPath();
+  kctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+  kctx.setLineDash([4, 8]);
+  kctx.strokeStyle = colRing;
+  kctx.lineWidth = 1.5;
+  kctx.stroke();
+  kctx.setLineDash([]);
+
+  // ── N/S/E/W labels on ring ──
+  const cardLabels = [['N',0],['E',90],['S',180],['W',270]];
+  cardLabels.forEach(([lbl, deg]) => {
+    const a = deg * D2R;
+    const lx = cx + Math.sin(a) * (ringR + 16);
+    const ly = cy - Math.cos(a) * (ringR + 16);
+    kctx.fillStyle = colDim;
+    kctx.font = '20px -apple-system,sans-serif';
+    kctx.textAlign = 'center'; kctx.textBaseline = 'middle';
+    kctx.fillText(lbl, lx, ly);
+  });
+
+  // ── Kaabah square (static, rotated 30°) ──
+  const face = getKaabahFace(qiblahAz);
+  const ROT = 30 * D2R;
+
+  kctx.save();
+  kctx.translate(cx, cy);
+  kctx.rotate(ROT);
+
+  // Fill
+  kctx.beginPath();
+  kctx.rect(-boxH, -boxH, boxH * 2, boxH * 2);
+  kctx.fillStyle = colBox; kctx.fill();
+  kctx.strokeStyle = colBorder; kctx.lineWidth = 2.5; kctx.stroke();
+
+  // Highlighted wall — drawn as thick edge on correct side
+  // Kaabah wall mapping before rotation:
+  // NE wall = top edge (y=−boxH)  — door face
+  // SE wall = right edge (x=+boxH) — hajar aswad face
+  // SW wall = bottom edge (y=+boxH) — yemeni face
+  // NW wall = left edge (x=−boxH)  — shami face
+  const wallMap = {
+    NE: [[-boxH,-boxH],[boxH,-boxH]],
+    SE: [[boxH,-boxH],[boxH,boxH]],
+    SW: [[-boxH,boxH],[boxH,boxH]],
+    NW: [[-boxH,-boxH],[-boxH,boxH]],
+  };
+  const [p1, p2] = wallMap[face.hi];
+  kctx.beginPath();
+  kctx.moveTo(p1[0], p1[1]);
+  kctx.lineTo(p2[0], p2[1]);
+  kctx.strokeStyle = colGreen;
+  kctx.lineWidth = 7; kctx.lineCap = 'round'; kctx.stroke();
+
+  // Door on NE face (top edge mid)
+  kctx.fillStyle = dk ? '#0d1f17' : '#d0e8d0';
+  kctx.strokeStyle = colBorder; kctx.lineWidth = 1.5;
+  kctx.beginPath(); kctx.rect(-18, -boxH - 10, 36, 14); kctx.fill(); kctx.stroke();
+  kctx.fillStyle = colDim; kctx.font = '14px -apple-system,sans-serif';
+  kctx.textAlign = 'center'; kctx.textBaseline = 'middle';
+  kctx.fillText('Door', 0, -boxH - 3);
+
+  // Hajar Aswad circle at SE corner (bottom-right)
+  kctx.beginPath(); kctx.arc(boxH, boxH, 10, 0, Math.PI * 2);
+  kctx.fillStyle = dk ? '#111' : '#333'; kctx.fill();
+  kctx.strokeStyle = colBorder; kctx.lineWidth = 1.5; kctx.stroke();
+
+  // Corner labels (outside box edges)
+  const cornerLabels = [
+    [-boxH - 6, -boxH - 6, 'Shami',       'end',    'bottom'],
+    [ boxH + 6, -boxH - 6, 'Iraqi',        'start',  'bottom'],
+    [-boxH - 6,  boxH + 6, 'Yemeni',      'end',    'top'],
+    [ boxH + 6,  boxH + 6, 'Hajar Aswad', 'start',  'top'],
+  ];
+  kctx.font = '14px -apple-system,sans-serif';
+  cornerLabels.forEach(([x, y, lbl, align, base]) => {
+    kctx.fillStyle = colDim;
+    kctx.textAlign = align; kctx.textBaseline = base;
+    kctx.fillText(lbl, x, y);
+  });
+
+  // Centre label
+  kctx.fillStyle = colText;
+  kctx.font = '18px -apple-system,sans-serif';
+  kctx.textAlign = 'center'; kctx.textBaseline = 'middle';
+  kctx.fillText('Kaabah', 0, 0);
+
+  kctx.restore();
+
+  // ── "You" dot on orbit ring at qiblahAz ──
+  const youAng = qiblahAz * D2R;
+  const youX = cx + Math.sin(youAng) * ringR;
+  const youY = cy - Math.cos(youAng) * ringR;
+
+  // Glow halo
+  kctx.beginPath(); kctx.arc(youX, youY, 16, 0, Math.PI * 2);
+  kctx.fillStyle = 'rgba(46,204,122,0.15)'; kctx.fill();
+
+  // Dot
+  kctx.beginPath(); kctx.arc(youX, youY, 10, 0, Math.PI * 2);
+  kctx.fillStyle = colGreen; kctx.fill();
+
+  // Dashed line from You toward Kaabah centre
+  const dist = Math.sqrt((youX - cx) ** 2 + (youY - cy) ** 2);
+  const ux = (cx - youX) / dist, uy = (cy - youY) / dist;
+  kctx.beginPath();
+  kctx.moveTo(youX + ux * 14, youY + uy * 14);
+  kctx.lineTo(cx - ux * (boxH - 10), cy - uy * (boxH - 10));
+  kctx.setLineDash([5, 5]);
+  kctx.strokeStyle = colGreen; kctx.lineWidth = 2; kctx.stroke();
+  kctx.setLineDash([]);
+
+  // "You" text below dot
+  kctx.fillStyle = colGreen;
+  kctx.font = 'bold 16px -apple-system,sans-serif';
+  kctx.textAlign = 'center'; kctx.textBaseline = 'top';
+  // Position label away from centre
+  const lblX = youX + ux * -24;
+  const lblY = youY + uy * -24;
+  kctx.fillText('You', lblX, lblY);
+
+  // Update text labels below canvas
+  el('kaabah-face-label').textContent = `You face the ${face.wall} — ${face.detail}`;
+  el('kaabah-face-sub').textContent   = face.sub;
+}
 function calcQiblah(lat, lng) {
   const φ1 = lat * D2R, φ2 = KAABAH_LAT * D2R;
   const Δλ = (KAABAH_LNG - lng) * D2R;
@@ -1037,6 +1237,7 @@ async function initCompass() {
     el('compass-loading').style.display='none';
     el('compass-content').style.display='flex';
     drawCompass(S.heading);
+    drawKaabah(S.qiblahAz);
 
     if (!S.compassStarted) {
       S.compassStarted = true;
@@ -1313,7 +1514,7 @@ el('h24-toggle').addEventListener('change', e => {
   if (S.times) renderPrayer(S.times, new Date());
 });
 
-window.addEventListener('resize', () => drawCompass(S.heading));
+window.addEventListener('resize', () => { drawCompass(S.heading); drawKaabah(S.qiblahAz); });
 
 /* ═══════════════════════════════════════════════════════════
    BOOT
