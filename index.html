@@ -346,30 +346,7 @@ html.light .p-time { color: var(--gold2); }
 .m-name { font-size: 13px; font-weight: 600; color: var(--text); }
 .m-desc { font-size: 11px; color: var(--text2); }
 
-/* ── Popup ──────────────────────────────────────────────── */
-.overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.72);
-  z-index: 100; align-items: center; justify-content: center;
-}
-.overlay.visible { display: flex; }
-.popup {
-  background: var(--surface); border: 1px solid var(--gold);
-  border-radius: 24px; padding: 28px 24px;
-  max-width: 300px; width: 90%; text-align: center;
-  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
-.popup-icon  { font-size: 52px; margin-bottom: 12px; }
-.popup-title { font-size: 20px; font-weight: 700; color: var(--gold2); margin-bottom: 6px; }
-.popup-sub   { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
-.popup-btn {
-  background: var(--gold); color: #0d1f17;
-  border: none; border-radius: 12px;
-  padding: 12px 0; font-size: 15px; font-weight: 700;
-  cursor: pointer; width: 100%; transition: opacity 0.15s;
-}
-.popup-btn:active { opacity: 0.8; }
+
 
 /* ── Scroll ─────────────────────────────────────────────── */
 .screen { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -502,18 +479,7 @@ html.light .p-time { color: var(--gold2); }
   </nav>
 </div>
 
-<!-- Popup -->
-<div class="overlay" id="overlay">
-  <div class="popup">
-    <div class="popup-icon">🕋</div>
-    <div class="popup-title">Alhamdulillah!</div>
-    <div class="popup-sub">
-      You are facing the Kaabah<br>
-      <span style="font-size:12px;color:var(--text3)">Makkah al-Mukarramah</span>
-    </div>
-    <button class="popup-btn" id="popup-ok">OK</button>
-  </div>
-</div>
+
 
 <script>
 'use strict';
@@ -724,6 +690,17 @@ function asrAngle(lat, dec, shadow) {
   return hourAngle(lat, dec, a);
 }
 
+// High-latitude fallback: if the target depression angle never occurs (sun doesn't
+// dip that deep), step the angle up toward the horizon until we find one that works.
+// Loop goes from targetAlt (e.g. -18) toward 0 in +0.5° steps.
+function safeHA(lat, dec, targetAlt) {
+  for (let a = targetAlt; a <= -0.5; a += 0.5) {
+    const h = hourAngle(lat, dec, a);
+    if (h !== null) return h;
+  }
+  return null; // only if sun never sets at all (extreme polar)
+}
+
 function calcTimes(lat, lng, date, methodId) {
   const p   = M_PARAMS[methodId] || M_PARAMS.MWL;
   const jd  = julianDay(date.getFullYear(), date.getMonth()+1, date.getDate());
@@ -731,34 +708,32 @@ function calcTimes(lat, lng, date, methodId) {
   const tz  = -date.getTimezoneOffset() / 60;
   const noon = 12 - lng/15 - eqt + tz;
 
-  const haFajr    = hourAngle(lat, dec, -p.fajr);
-  const haSunrise = hourAngle(lat, dec, -0.833);
+  // Use safeHA for Fajr/Isha so high-latitude locations step down to a
+  // shallower working angle instead of falling back to a fixed 1.5h offset.
+  const haFajr    = safeHA(lat, dec, -p.fajr);
+  const haMaghrib = hourAngle(lat, dec, -0.833);  // sunrise/sunset angle — always defined except polar
   const haAsr     = asrAngle(lat, dec, 1);
-  const haMaghrib = hourAngle(lat, dec, -0.833);
 
   let ishaOffset;
   if (p.ishaMin != null) {
     ishaOffset = p.ishaMin / 60;
   } else {
-    const haIsha = hourAngle(lat, dec, -p.isha);
+    const haIsha = safeHA(lat, dec, -p.isha);
     ishaOffset = haIsha != null ? haIsha/15 : 1.5;
   }
 
-  // Safe fallbacks when hour angle is undefined (polar regions or extreme dates)
   const fajr    = noon - (haFajr    != null ? haFajr/15    : 1.5);
   const dhuhr   = noon + 0.0167;
   const asr     = noon + (haAsr     != null ? haAsr/15     : 3.5);
   const maghrib = noon + (haMaghrib != null ? haMaghrib/15 : 0.278);
   const isha    = p.ishaMin != null ? maghrib + ishaOffset : noon + ishaOffset;
 
-  // Convert decimal local hours to a Date object
-  // Use explicit setHours to avoid any edge case with DST or setMinutes roll-over
+  // Convert decimal local hours to a Date — explicit hh/mm avoids DST edge cases
   function toDate(h) {
     const totalMin = Math.round(h * 60);
     const hh = Math.floor(totalMin / 60);
     const mm = totalMin % 60;
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0, 0);
-    return d;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0, 0);
   }
 
   return {
@@ -985,7 +960,6 @@ function checkAlign(heading) {
   if (now && !S.aligned && !S.popupShown) {
     S.aligned = true; S.popupShown = true;
     updateAlignUI();
-    document.getElementById('overlay').classList.add('visible');
   } else if (!now && S.aligned) {
     S.aligned = false; S.popupShown = false;
     updateAlignUI();
@@ -1230,11 +1204,6 @@ el('refresh-compass').addEventListener('click', initCompass);
 el('compass-retry').addEventListener('click', initCompass);
 el('refresh-prayer').addEventListener('click', () => { S.lat=null; initPrayer(); });
 el('prayer-retry').addEventListener('click',   () => { S.lat=null; initPrayer(); });
-
-el('popup-ok').addEventListener('click', () => el('overlay').classList.remove('visible'));
-el('overlay').addEventListener('click', e => {
-  if (e.target===e.currentTarget) el('overlay').classList.remove('visible');
-});
 
 // Dark mode toggle (Settings)
 el('dark-toggle').addEventListener('change', e => {
