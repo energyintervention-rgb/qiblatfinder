@@ -454,6 +454,14 @@ html.light .p-time { color: var(--gold2); }
       </div>
 
       <div class="section-label">⏰ Prayer Alarms</div>
+      <div class="setting-row" style="cursor:pointer" id="test-sound-row">
+        <span class="s-icon">🔔</span>
+        <div class="s-info">
+          <div class="s-title">Test Alarm Sound</div>
+          <div class="s-sub">Preview the prayer alert tone</div>
+        </div>
+        <button style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;" onclick="playAlarmSound()">▶ Play</button>
+      </div>
       <div id="alarm-rows"></div>
 
       <div class="section-label">Calculation Method</div>
@@ -478,8 +486,6 @@ html.light .p-time { color: var(--gold2); }
     </button>
   </nav>
 </div>
-
-
 
 <script>
 'use strict';
@@ -569,7 +575,7 @@ const S = {
   qiblahAz: null,
   heading: 0,
   aligned: false,
-  popupShown: false,
+  alignLocked: false,    // prevents re-triggering until user rotates away and back
   compassStarted: false,
   times: null,
 };
@@ -957,11 +963,11 @@ function checkAlign(heading) {
   if (diff > 180) diff = 360 - diff;
 
   const now = diff <= ALIGN_TOL;
-  if (now && !S.aligned && !S.popupShown) {
-    S.aligned = true; S.popupShown = true;
+  if (now && !S.aligned && !S.alignLocked) {
+    S.aligned = true; S.alignLocked = true;
     updateAlignUI();
   } else if (!now && S.aligned) {
-    S.aligned = false; S.popupShown = false;
+    S.aligned = false; S.alignLocked = false;
     updateAlignUI();
   }
 }
@@ -1099,6 +1105,60 @@ function renderPrayer(times, now) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ALARM SOUND  (Web Audio API — no external file needed)
+   Plays a soft adhan-style tone sequence:
+   3 rising bell tones → short pause → 3 more tones
+═══════════════════════════════════════════════════════════ */
+function playAlarmSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Each note: [frequency Hz, startTime s, duration s, volume]
+    const notes = [
+      // First call — three rising tones
+      [523.25, 0.0,  0.5, 0.6],   // C5
+      [659.25, 0.6,  0.5, 0.7],   // E5
+      [783.99, 1.2,  0.8, 0.8],   // G5
+      // Pause 0.6s
+      // Second call — repeat, slightly louder
+      [523.25, 2.6,  0.5, 0.7],
+      [659.25, 3.2,  0.5, 0.8],
+      [783.99, 3.8,  1.0, 0.9],
+      // Final sustain note
+      [880.00, 5.2,  1.5, 0.6],   // A5 — fade out
+    ];
+
+    notes.forEach(([freq, start, dur, vol]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+
+      // Soft attack, hold, then fade
+      const t = ctx.currentTime + start;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(vol, t + 0.08);     // attack
+      gain.gain.setValueAtTime(vol, t + dur - 0.15);         // hold
+      gain.gain.linearRampToValueAtTime(0, t + dur);         // release
+
+      osc.start(t);
+      osc.stop(t + dur);
+    });
+
+    // Auto-close context after sound completes
+    setTimeout(() => { try { ctx.close(); } catch(e){} }, 7000);
+
+  } catch(e) {
+    // Web Audio not available — silent fallback is acceptable
+    console.warn('Web Audio unavailable:', e);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    NOTIFICATIONS
 ═══════════════════════════════════════════════════════════ */
 const alarmTimers = {};
@@ -1114,6 +1174,9 @@ async function scheduleAlarms() {
     const ms = t.getTime() - Date.now();
     if (ms < 0 || ms > 86400000) return;
     alarmTimers[name] = setTimeout(() => {
+      // Play tone first (works even when app is in background tab)
+      playAlarmSound();
+      // Then fire system notification
       if (typeof Notification !== 'undefined' && Notification.permission==='granted') {
         new Notification(`Prayer Time — ${name}`, {
           body: `It is time for ${name} prayer.`,
