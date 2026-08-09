@@ -1000,23 +1000,40 @@ function drawKaabah(qiblahAz) {
   kctx.beginPath(); kctx.arc(youX, youY, 10, 0, Math.PI * 2);
   kctx.fillStyle = colGreen; kctx.fill();
 
-  // Dashed line from You toward Kaabah centre
+  // Arrow from You toward Kaabah centre (solid line + arrowhead)
   const dist = Math.sqrt((youX - cx) ** 2 + (youY - cy) ** 2);
   const ux = (cx - youX) / dist, uy = (cy - youY) / dist;
+  const lineStartX = youX + ux * 16, lineStartY = youY + uy * 16;
+  const lineEndX   = cx - ux * (boxH - 4), lineEndY = cy - uy * (boxH - 4);
+
   kctx.beginPath();
-  kctx.moveTo(youX + ux * 14, youY + uy * 14);
-  kctx.lineTo(cx - ux * (boxH - 10), cy - uy * (boxH - 10));
-  kctx.setLineDash([5, 5]);
-  kctx.strokeStyle = colGreen; kctx.lineWidth = 2; kctx.stroke();
-  kctx.setLineDash([]);
+  kctx.moveTo(lineStartX, lineStartY);
+  kctx.lineTo(lineEndX, lineEndY);
+  kctx.strokeStyle = colGreen; kctx.lineWidth = 2.5; kctx.lineCap = 'round';
+  kctx.stroke();
+
+  // Arrowhead at the Kaabah end
+  const headLen = 12, headAng = Math.atan2(uy, ux);
+  kctx.beginPath();
+  kctx.moveTo(lineEndX, lineEndY);
+  kctx.lineTo(
+    lineEndX - headLen * Math.cos(headAng - Math.PI / 7),
+    lineEndY - headLen * Math.sin(headAng - Math.PI / 7)
+  );
+  kctx.lineTo(
+    lineEndX - headLen * Math.cos(headAng + Math.PI / 7),
+    lineEndY - headLen * Math.sin(headAng + Math.PI / 7)
+  );
+  kctx.closePath();
+  kctx.fillStyle = colGreen; kctx.fill();
 
   // "You" text below dot
   kctx.fillStyle = colGreen;
   kctx.font = 'bold 16px -apple-system,sans-serif';
-  kctx.textAlign = 'center'; kctx.textBaseline = 'top';
-  // Position label away from centre
-  const lblX = youX + ux * -24;
-  const lblY = youY + uy * -24;
+  kctx.textAlign = 'center'; kctx.textBaseline = 'middle';
+  // Position label further away from the dot so it never overlaps
+  const lblX = youX + ux * -36;
+  const lblY = youY + uy * -36;
   kctx.fillText('You', lblX, lblY);
 
   // Update text labels below canvas
