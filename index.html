@@ -928,20 +928,33 @@ function drawKaabah(qiblahAz) {
   kctx.fillText('N', cx, cy - ringR - 14);
   kctx.fillText('E', cx + ringR + 14, cy);
 
-  // ── Kaabah square (axis-aligned — true to compass bearing) ──
-  // Corners: TL=Shami(W), TR=Iraqi(N), BR=Hajar Aswad(E), BL=Yemeni(S)
+  // ── Kaabah square, rotated so CORNERS land on true N/E/S/W and WALLS
+  //    land on true NE/SE/SW/NW (verified fact: corners point cardinal,
+  //    walls face intercardinal). An axis-aligned square has it backwards
+  //    (sides at cardinal, corners at intercardinal), so we rotate -45°.
+  //    Corners in local (unrotated) space: TL=Shami, TR=Iraqi, BR=Hajar
+  //    Aswad, BL=Yemeni — after -45° these land exactly on W/N/E/S.
   const face = getKaabahFace(userAz);
+  const ROT = -45 * D2R;
+  const cosR = Math.cos(ROT), sinR = Math.sin(ROT);
+  // rotate a point (x,y) local to the box centre by ROT, return absolute coords
+  function rot(x, y) { return [cx + x * cosR - y * sinR, cy + x * sinR + y * cosR]; }
+
+  kctx.save();
+  kctx.translate(cx, cy);
+  kctx.rotate(ROT);
+
   kctx.beginPath();
-  kctx.rect(cx - boxH, cy - boxH, boxH * 2, boxH * 2);
+  kctx.rect(-boxH, -boxH, boxH * 2, boxH * 2);
   kctx.fillStyle = colBox; kctx.fill();
   kctx.strokeStyle = colGold; kctx.lineWidth = 2; kctx.stroke();
 
-  // Highlighted wall — thick edge matching the facing quadrant
+  // Highlighted wall — thick edge matching the facing quadrant (local coords)
   const wallMap = {
-    NE: [[cx+boxH,cy-boxH],[cx+boxH,cy+boxH]],
-    SE: [[cx-boxH,cy+boxH],[cx+boxH,cy+boxH]],
-    SW: [[cx-boxH,cy-boxH],[cx-boxH,cy+boxH]],
-    NW: [[cx-boxH,cy-boxH],[cx+boxH,cy-boxH]],
+    NE: [[boxH,-boxH],[boxH,boxH]],
+    SE: [[-boxH,boxH],[boxH,boxH]],
+    SW: [[-boxH,-boxH],[-boxH,boxH]],
+    NW: [[-boxH,-boxH],[boxH,-boxH]],
   };
   const [p1, p2] = wallMap[face.hi];
   kctx.beginPath();
@@ -951,12 +964,13 @@ function drawKaabah(qiblahAz) {
   // Door tab on the NE (right) edge, mid-height
   kctx.fillStyle = dk ? '#0d1f17' : '#d0e8d0';
   kctx.strokeStyle = colBorder; kctx.lineWidth = 1;
-  kctx.beginPath(); kctx.rect(cx + boxH - 3, cy - 10, 10, 20); kctx.fill(); kctx.stroke();
+  kctx.beginPath(); kctx.rect(boxH - 3, -10, 10, 20); kctx.fill(); kctx.stroke();
 
   kctx.fillStyle = colText;
   kctx.font = '13px -apple-system,sans-serif';
   kctx.textAlign = 'center'; kctx.textBaseline = 'middle';
-  kctx.fillText('Kaabah', cx, cy);
+  kctx.fillText('Kaabah', 0, 0);
+  kctx.restore();
 
   // ── Badge helper: rounded box + leader line from an anchor point ──
   function badge(anchorX, anchorY, boxX, boxY, boxW, boxH2, lines) {
@@ -979,17 +993,19 @@ function drawKaabah(qiblahAz) {
     lines.forEach((t, i) => kctx.fillText(t, boxX + boxW / 2, startY + i * lineH));
   }
 
-  // Corner dots
-  [[cx-boxH,cy-boxH],[cx+boxH,cy-boxH],[cx-boxH,cy+boxH],[cx+boxH,cy+boxH]].forEach(([x,y]) => {
+  // Corner dots — rotated to their true N/E/S/W positions
+  const shami = rot(-boxH,-boxH), iraqi = rot(boxH,-boxH), hajarAswad = rot(boxH,boxH), yemeni = rot(-boxH,boxH);
+  const doorAnchor = rot(boxH, 0), hijrAnchor = rot(0, -boxH);
+  [shami, iraqi, hajarAswad, yemeni].forEach(([x,y]) => {
     kctx.beginPath(); kctx.arc(x, y, 3, 0, Math.PI*2); kctx.fillStyle = colGold; kctx.fill();
   });
 
-  badge(cx - boxH, cy - boxH, 15, 15, 90, 30, ['Hijr Ismail']);
-  badge(cx + boxH, cy - boxH, 335, 15, 90, 30, ['Rukun Iraqi']);
-  badge(cx - boxH, cy - boxH, 15, 60, 90, 30, ['Rukun Shami']);
-  badge(cx + boxH, cy, 335, 85, 90, 30, ['Door &', 'Multazam']);
-  badge(cx - boxH, cy + boxH, 15, 215, 90, 30, ['Rukun Yemeni']);
-  badge(cx + boxH, cy + boxH, 335, 210, 90, 30, ['Hajar Aswad']);
+  badge(hijrAnchor[0], hijrAnchor[1], 15, 15, 90, 30, ['Hijr Ismail']);
+  badge(iraqi[0], iraqi[1], 335, 15, 90, 30, ['Rukun Iraqi']);
+  badge(shami[0], shami[1], 15, 60, 90, 30, ['Rukun Shami']);
+  badge(doorAnchor[0], doorAnchor[1], 335, 85, 90, 30, ['Door &', 'Multazam']);
+  badge(yemeni[0], yemeni[1], 15, 215, 90, 30, ['Rukun Yemeni']);
+  badge(hajarAswad[0], hajarAswad[1], 335, 210, 90, 30, ['Hajar Aswad']);
 
   // ── "You" — arrow points INWARD from the marker to the Kaabah edge ──
   const youAng = userAz * D2R;
