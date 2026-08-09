@@ -863,10 +863,10 @@ const KAABAH_LAT = 21.4225, KAABAH_LNG = 39.8262;
 ═══════════════════════════════════════════════════════════ */
 function getKaabahFace(az) {
   const a = ((az % 360) + 360) % 360;
-  if (a >= 5   && a < 95)  return { wall:'NE wall', detail:'Door (Bab) face',        sub:'Between Shami & Iraqi corners',    hi:'NE' };
-  if (a >= 95  && a < 185) return { wall:'SE wall', detail:'Hajar Aswad face',        sub:'Between Iraqi & Hajar Aswad',      hi:'SE' };
-  if (a >= 185 && a < 275) return { wall:'SW wall', detail:'Yemeni corner face',      sub:'Between Yemeni & Hajar Aswad',     hi:'SW' };
-  return                           { wall:'NW wall', detail:'Shami corner face',       sub:'Between Shami & Iraqi corners',    hi:'NW' };
+  if (a >= 5   && a < 95)  return { wall:'NE wall', detail:'Door (Bab) face',        sub:'Between Hajar Aswad & Iraqi corners', hi:'NE' };
+  if (a >= 95  && a < 185) return { wall:'SE wall', detail:'Hajar Aswad face',        sub:'Between Yemeni & Hajar Aswad corners', hi:'SE' };
+  if (a >= 185 && a < 275) return { wall:'SW wall', detail:'Yemeni corner face',      sub:'Between Shami & Yemeni corners',       hi:'SW' };
+  return                           { wall:'NW wall', detail:'Shami corner face',       sub:'Between Iraqi & Shami corners',        hi:'NW' };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -934,16 +934,18 @@ function drawKaabah(qiblahAz) {
   kctx.strokeStyle = colBorder; kctx.lineWidth = 2.5; kctx.stroke();
 
   // Highlighted wall — drawn as thick edge on correct side
-  // Kaabah wall mapping before rotation:
-  // NE wall = top edge (y=−boxH)  — door face
-  // SE wall = right edge (x=+boxH) — hajar aswad face
-  // SW wall = bottom edge (y=+boxH) — yemeni face
-  // NW wall = left edge (x=−boxH)  — shami face
+  // Corner positions in this drawing (before rotation): TL=Shami(W), TR=Iraqi(N),
+  // BR=Hajar Aswad(E), BL=Yemeni(S) — matches real Kaabah corner compass bearings.
+  // Wall-to-corner-pair (real world, verified):
+  //   NE wall = Hajar Aswad↔Iraqi = right edge (x=+boxH)  — door face
+  //   SE wall = Yemeni↔Hajar Aswad = bottom edge (y=+boxH) — hajar aswad-side face
+  //   SW wall = Shami↔Yemeni = left edge (x=−boxH)         — yemeni-side face
+  //   NW wall = Iraqi↔Shami = top edge (y=−boxH)            — shami-side face (Hijr Ismail side)
   const wallMap = {
-    NE: [[-boxH,-boxH],[boxH,-boxH]],
-    SE: [[boxH,-boxH],[boxH,boxH]],
-    SW: [[-boxH,boxH],[boxH,boxH]],
-    NW: [[-boxH,-boxH],[-boxH,boxH]],
+    NE: [[boxH,-boxH],[boxH,boxH]],
+    SE: [[-boxH,boxH],[boxH,boxH]],
+    SW: [[-boxH,-boxH],[-boxH,boxH]],
+    NW: [[-boxH,-boxH],[boxH,-boxH]],
   };
   const [p1, p2] = wallMap[face.hi];
   kctx.beginPath();
@@ -952,13 +954,13 @@ function drawKaabah(qiblahAz) {
   kctx.strokeStyle = colGreen;
   kctx.lineWidth = 7; kctx.lineCap = 'round'; kctx.stroke();
 
-  // Door on NE face (top edge mid)
+  // Door on NE face (right edge, mid-height)
   kctx.fillStyle = dk ? '#0d1f17' : '#d0e8d0';
   kctx.strokeStyle = colBorder; kctx.lineWidth = 1.5;
-  kctx.beginPath(); kctx.rect(-18, -boxH - 10, 36, 14); kctx.fill(); kctx.stroke();
+  kctx.beginPath(); kctx.rect(boxH - 4, -18, 14, 36); kctx.fill(); kctx.stroke();
   kctx.fillStyle = colDim; kctx.font = '14px -apple-system,sans-serif';
-  kctx.textAlign = 'center'; kctx.textBaseline = 'middle';
-  kctx.fillText('Door', 0, -boxH - 3);
+  kctx.textAlign = 'left'; kctx.textBaseline = 'middle';
+  kctx.fillText('Door', boxH + 15, 0);
 
   // Hajar Aswad circle at SE corner (bottom-right)
   kctx.beginPath(); kctx.arc(boxH, boxH, 10, 0, Math.PI * 2);
@@ -1280,6 +1282,7 @@ function drawCompass(heading) {
     const ed = r - 55;
     ctx.save();
     ctx.translate(Math.sin(qa)*ed, -Math.cos(qa)*ed);
+    ctx.rotate(heading * D2R); // counter-rotate so the emoji stays upright, same as N/E/S/W labels
     ctx.font='28px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText('🕋',0,0);
     ctx.restore();
