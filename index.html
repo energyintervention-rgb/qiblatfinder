@@ -1009,8 +1009,14 @@ function drawKaabah(qiblahAz) {
 
   // ── "You" — arrow points INWARD from the marker to the Kaabah edge ──
   const youAng = userAz * D2R;
-  const edgeX = cx + Math.sin(youAng) * boxH;
-  const edgeY = cy - Math.cos(youAng) * boxH;
+  // Distance from centre to the ROTATED box's actual boundary along this
+  // bearing (not just boxH — the box is rotated -45°, so the true edge
+  // distance varies between boxH at a wall's centre and boxH*1.41 near a
+  // corner). Convert to the box's local (unrotated) angle to find it.
+  const localAng = (userAz - (-45)) * D2R;
+  const edgeDist = boxH / Math.max(Math.abs(Math.sin(localAng)), Math.abs(Math.cos(localAng)));
+  const edgeX = cx + Math.sin(youAng) * edgeDist;
+  const edgeY = cy - Math.cos(youAng) * edgeDist;
   const youX = cx + Math.sin(youAng) * (ringR + 55);
   const youY = cy - Math.cos(youAng) * (ringR + 55);
 
