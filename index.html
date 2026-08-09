@@ -1668,6 +1668,24 @@ const RK = { selected:'zohor', jamak:false, qasar:false, sessions:[], sessionIdx
 const RK_STORAGE_KEY = 'qiblat_rakaat_session';
 const RK_TIMEOUT_MS = 20 * 60 * 1000;
 
+/* Keep the screen awake while actively counting rakaat, so the phone
+   doesn't lock mid-solat. Released on exit/finish; re-acquired if the
+   tab regains visibility while a session is still active (the browser
+   auto-releases the lock whenever the tab is hidden). */
+let rkWakeLock = null;
+async function rkRequestWakeLock(){
+  if (!('wakeLock' in navigator)) return;
+  try { rkWakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+}
+function rkReleaseWakeLock(){
+  if (rkWakeLock) { try { rkWakeLock.release(); } catch(e){} rkWakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && el('rk-active').style.display === 'flex') {
+    rkRequestWakeLock();
+  }
+});
+
 function rkSaveSession(){
   try {
     localStorage.setItem(RK_STORAGE_KEY, JSON.stringify({
@@ -1694,6 +1712,7 @@ function rkTryResume(){
     el('rk-setup').style.display = 'none';
     el('rk-active').style.display = 'flex';
     rkPaintActive();
+    rkRequestWakeLock();
     return true;
   } catch(e) { return false; }
 }
@@ -1856,6 +1875,7 @@ function rkResetToSetup(){
   el('rk-active').style.display = 'none';
   el('rk-setup').style.display = 'flex';
   rkRenderSetup();
+  rkReleaseWakeLock();
 }
 
 function rkInit(){
@@ -1886,6 +1906,7 @@ function rkInit(){
     el('rk-active').style.display = 'flex';
     rkPaintActive();
     rkSaveSession();
+    rkRequestWakeLock();
   });
 
   el('rk-tap-zone').addEventListener('click', () => {
