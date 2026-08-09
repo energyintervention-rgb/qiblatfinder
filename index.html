@@ -872,7 +872,8 @@ function getKaabahFace(az) {
 /* ═══════════════════════════════════════════════════════════
    DRAW KAABAH TOP VIEW
    - Kaabah square: static, centred, rotated 30° (real orientation)
-   - "You" dot: positioned on orbit ring at qiblahAz angle
+   - "You" dot: positioned on orbit ring at (qiblahAz + 180°) — bearing FROM
+     the Kaabah TO the user, since qiblahAz itself is the reverse (user→Kaabah)
    - Highlighted wall: green edge on Kaabah square
    - Canvas: 440×300 logical pixels
 ═══════════════════════════════════════════════════════════ */
@@ -886,6 +887,11 @@ function drawKaabah(qiblahAz) {
   const ringR = 110;   // orbit ring radius
   const boxH  = 70;   // Kaabah half-size before rotate
   const dk = !document.documentElement.classList.contains('light');
+
+  // qiblahAz is the bearing FROM the user TO the Kaabah (what you face to pray).
+  // This diagram puts the Kaabah at the centre, so "You" and the facing-wall
+  // calculation need the OPPOSITE bearing — FROM the Kaabah TO the user.
+  const userAz = (qiblahAz + 180) % 360;
 
   kctx.clearRect(0, 0, W, H);
 
@@ -920,7 +926,7 @@ function drawKaabah(qiblahAz) {
   });
 
   // ── Kaabah square (static, rotated 30°) ──
-  const face = getKaabahFace(qiblahAz);
+  const face = getKaabahFace(userAz);
   const ROT = 30 * D2R;
 
   kctx.save();
@@ -989,8 +995,8 @@ function drawKaabah(qiblahAz) {
 
   kctx.restore();
 
-  // ── "You" dot on orbit ring at qiblahAz ──
-  const youAng = qiblahAz * D2R;
+  // ── "You" dot on orbit ring at userAz (bearing from Kaabah to the user) ──
+  const youAng = userAz * D2R;
   const youX = cx + Math.sin(youAng) * ringR;
   const youY = cy - Math.cos(youAng) * ringR;
 
