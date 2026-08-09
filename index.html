@@ -374,6 +374,81 @@ html.light .p-time { color: var(--gold2); }
 
 
 
+/* ══════════════════════════════════════════════════════════
+   RAKAAT SCREEN
+══════════════════════════════════════════════════════════ */
+#rakaat-screen { position: relative; }
+
+.rk-setup { padding: 4px 14px 28px; display: flex; flex-direction: column; gap: 2px; }
+
+.rk-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 8px 0 18px; }
+.rk-pbtn {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 6px; text-align: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.rk-pbtn.wide { grid-column: span 3; max-width: 33.3%; }
+.rk-pbtn .rk-pname { font-size: 13px; color: var(--text); }
+.rk-pbtn .rk-pn { display:block; font-size: 18px; font-weight: 700; color: var(--text3); margin-top: 3px; }
+.rk-pbtn.sel { border-color: var(--gold); background: var(--surface2); }
+.rk-pbtn.sel .rk-pn { color: var(--gold2); }
+
+.rk-mode-row { display: flex; gap: 10px; margin-bottom: 8px; }
+.rk-mode {
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.rk-mode-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.rk-mode-sub { font-size: 11px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+.rk-mode.on { border-color: var(--green); background: var(--surface2); }
+.rk-mode.on .rk-mode-title { color: var(--green); }
+.rk-mode.off-able { opacity: 0.35; pointer-events: none; }
+
+.rk-note { font-size: 12px; color: var(--text2); line-height: 1.5; margin: 8px 2px 18px; min-height: 20px; }
+.rk-note b { color: var(--gold2); }
+
+.rk-niat-card {
+  background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--gold);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+}
+.rk-niat-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold2); margin-bottom: 6px; }
+.rk-niat-ar { direction: rtl; font-family: 'Traditional Arabic','Scheherazade New',serif; font-size: 19px; line-height: 1.9; color: var(--gold2); margin-bottom: 6px; }
+.rk-niat-rumi { font-style: italic; font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 4px; }
+.rk-niat-my { font-size: 12px; line-height: 1.5; color: var(--text2); }
+.rk-niat-foot { font-size: 11px; color: var(--text3); line-height: 1.5; margin: 2px 2px 20px; }
+
+.rk-start-btn {
+  background: var(--gold2); color: #1a1400; border: none; border-radius: 12px;
+  padding: 16px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%;
+}
+
+/* ── Active counting view ─────────────────────────────────── */
+.rk-active { display: none; flex-direction: column; flex: 1; }
+.rk-active-top { padding: 4px 16px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+.rk-active-title { font-size: 19px; font-weight: 700; color: var(--text); }
+.rk-badges { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.rk-badge { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--green); border: 1px solid var(--green-dim); border-radius: 20px; padding: 3px 9px; }
+.rk-exit-btn { color: var(--text2); font-size: 13px; background: none; border: none; padding: 6px; cursor: pointer; }
+
+.rk-tap-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 20px; }
+.rk-frac { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+.rk-count { font-size: clamp(84px,30vw,140px); line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; }
+.rk-of { font-size: 26px; color: var(--text3); font-weight: 700; }
+.rk-stage { margin-top: 16px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--gold2); min-height: 18px; }
+.rk-hint { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 12px; color: var(--text3); }
+.rk-tahiyat .rk-count { font-size: clamp(26px,7vw,38px); color: var(--gold2); }
+.rk-tahiyat .rk-stage { color: var(--text2); }
+
+/* ── Overlay (transition / done) ─────────────────────────── */
+.rk-overlay {
+  display: none; position: absolute; inset: 0; background: var(--bg); z-index: 6;
+  flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px;
+}
+.rk-ov-eyebrow { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; }
+.rk-ov-title { font-size: 26px; font-weight: 700; color: var(--text); margin-bottom: 26px; }
+.rk-ov-btn { background: var(--gold2); color: #1a1400; border: none; border-radius: 12px; padding: 15px 32px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.rk-ov-btn.secondary { background: transparent; color: var(--text2); border: 1px solid var(--border); margin-top: 12px; }
+
 /* ── Scroll ─────────────────────────────────────────────── */
 .screen { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .screen::-webkit-scrollbar { display: none; }
@@ -478,6 +553,68 @@ html.light .p-time { color: var(--gold2); }
     </div>
   </div>
 
+  <!-- ══════ RAKAAT TRACKER ══════ -->
+  <div id="rakaat-screen" class="screen">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">🔢 Rakaat</div>
+        <div class="topbar-sub">Penjejak rakaat &amp; niat</div>
+      </div>
+    </div>
+
+    <!-- Setup -->
+    <div class="rk-setup" id="rk-setup">
+      <div class="section-label" style="padding-top:10px">Waktu</div>
+      <div class="rk-grid" id="rk-prayer-grid"></div>
+
+      <div class="section-label">Kaedah</div>
+      <div class="rk-mode-row">
+        <div class="rk-mode" id="rk-toggle-jamak">
+          <div class="rk-mode-title">Jamak</div>
+          <div class="rk-mode-sub">Gabung dua waktu</div>
+        </div>
+        <div class="rk-mode" id="rk-toggle-qasar">
+          <div class="rk-mode-title">Qasar</div>
+          <div class="rk-mode-sub">Pendekkan rakaat</div>
+        </div>
+      </div>
+      <div class="rk-note" id="rk-note"></div>
+
+      <div class="section-label">Niat</div>
+      <div id="rk-niat-block"></div>
+      <div class="rk-niat-foot">Lafaz sebagai bantuan sahaja — niat sebenar di dalam hati.</div>
+
+      <button class="rk-start-btn" id="rk-start-btn">Mula</button>
+    </div>
+
+    <!-- Active counting -->
+    <div class="rk-active" id="rk-active">
+      <div class="rk-active-top">
+        <div>
+          <div class="rk-active-title" id="rk-active-title">Zohor</div>
+          <div class="rk-badges" id="rk-active-badges"></div>
+        </div>
+        <button class="rk-exit-btn" id="rk-exit-btn">Tamat</button>
+      </div>
+      <div class="rk-tap-zone" id="rk-tap-zone">
+        <div class="rk-frac">
+          <div class="rk-count" id="rk-count">1</div>
+          <div class="rk-of" id="rk-total">/ 4</div>
+        </div>
+        <div class="rk-stage" id="rk-stage">Tap untuk rakaat seterusnya</div>
+      </div>
+      <div class="rk-hint">Tap skrin untuk teruskan</div>
+    </div>
+
+    <!-- Transition / done overlay -->
+    <div class="rk-overlay" id="rk-overlay">
+      <div class="rk-ov-eyebrow" id="rk-ov-eyebrow">Selesai</div>
+      <div class="rk-ov-title" id="rk-ov-title">Zohor</div>
+      <button class="rk-ov-btn" id="rk-ov-btn">Teruskan</button>
+      <button class="rk-ov-btn secondary" id="rk-ov-reset-btn">Solat baharu</button>
+    </div>
+  </div>
+
   <!-- ══════ SETTINGS ══════ -->
   <div id="settings-screen" class="screen">
     <div class="topbar">
@@ -542,6 +679,9 @@ html.light .p-time { color: var(--gold2); }
     </button>
     <button class="tab" data-s="prayer-screen">
       <span class="tab-icon">🕋</span>Prayer
+    </button>
+    <button class="tab" data-s="rakaat-screen">
+      <span class="tab-icon">🔢</span>Rakaat
     </button>
     <button class="tab" data-s="settings-screen">
       <span class="tab-icon">⚙️</span>Settings
@@ -1472,6 +1612,234 @@ function syncAlarmToggles() {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   RAKAAT TRACKER
+   Rakaat rules: Subuh & Maghrib cannot be qasar'd (fixed rakaat).
+   Jamak pairs: Zohor+Asar, Maghrib+Isyak only.
+═══════════════════════════════════════════════════════════ */
+const RK_PRAYERS = {
+  subuh:   { key:'subuh',   name:'Subuh',   rakaat:2, jamakWith:null },
+  zohor:   { key:'zohor',   name:'Zohor',   rakaat:4, qasarRakaat:2, jamakWith:'asar' },
+  asar:    { key:'asar',    name:'Asar',    rakaat:4, qasarRakaat:2, jamakWith:'zohor' },
+  maghrib: { key:'maghrib', name:'Maghrib', rakaat:3, jamakWith:'isyak' },
+  isyak:   { key:'isyak',   name:'Isyak',   rakaat:4, qasarRakaat:2, jamakWith:'maghrib' }
+};
+const RK_ORDER = ['subuh','zohor','asar','maghrib','isyak'];
+
+const RK = { selected:'zohor', jamak:false, qasar:false, sessions:[], sessionIdx:0, rakaat:1 };
+
+function rkCanQasar(key){ return RK_PRAYERS[key].qasarRakaat !== undefined; }
+function rkCanJamak(key){ return !!RK_PRAYERS[key].jamakWith; }
+function rkVibrate(p){ if (navigator.vibrate) { try { navigator.vibrate(p); } catch(e){} } }
+
+function rkSessionRakaat(key, qasar){
+  const p = RK_PRAYERS[key];
+  return (qasar && p.qasarRakaat !== undefined) ? p.qasarRakaat : p.rakaat;
+}
+
+function rkBuildSessions(){
+  const key = RK.selected, p = RK_PRAYERS[key];
+  if (RK.jamak && p.jamakWith){
+    let pair = [key, p.jamakWith];
+    if (pair[0]==='asar')  pair = ['zohor','asar'];
+    if (pair[0]==='isyak') pair = ['maghrib','isyak'];
+    return pair.map(k => ({ key:k, name:RK_PRAYERS[k].name, total:rkSessionRakaat(k, RK.qasar) }));
+  }
+  return [{ key, name:p.name, total:rkSessionRakaat(key, RK.qasar) }];
+}
+
+/* ── Niat generator: Arabic + Rumi + Malay ─────────────────
+   Sourced/cross-checked against JAKIM-referenced guides for:
+   tunai (5 waktu), qasar-sahaja, jamak+qasar Zohor-Asar &
+   Maghrib-Isyak (taqdim & takhir). Jamak-without-qasar and the
+   Zohor-Asar taqdim Arabic form are built from the same confirmed
+   word pattern (verified consistent across the sourced examples,
+   e.g. Maghrib's non-qasar jamak line) rather than quoted directly —
+   flagged here for transparency, not independently verified per line. */
+const RK_AR_PRAYER = { subuh:'الصُّبْحِ', zohor:'الظُّهْرِ', asar:'الْعَصْرِ', maghrib:'الْمَغْرِبِ', isyak:'الْعِشَاءِ' };
+const RK_AR_RAKAAT_FULL = { 2:'رَكْعَتَيْنِ', 3:'ثَلَاثَ رَكَعَاتٍ', 4:'أَرْبَعَ رَكَعَاتٍ' };
+const RK_AR_QASAR = 'قَصْرًا رَكْعَتَيْنِ';
+const RK_AR_JAMAK = { taqdim:'جَمْعَ تَقْدِيمٍ', takhir:'جَمْعَ تَأْخِيرٍ' };
+
+const RK_RUMI_FARD = { subuh:'Fardos-Subhi', zohor:'Fardoz-Zuhri', asar:'Fardol Asri', maghrib:'Fardhal Maghribi', isyak:"Fardol Isya'i" };
+const RK_RUMI_RAKAAT_FULL = { 2:"Rak'ataini", 3:"Salasa Raka'atin", 4:"Arba'a Raka'atin" };
+const RK_RUMI_QASAR = "Qosron Rak'ataini";
+const RK_RUMI_JAMAK = { taqdim:"Jam'a Taqdiimin", takhir:"Jam'a Takhirin" };
+
+const RK_NUM_WORD = { 2:'dua', 3:'tiga', 4:'empat' };
+
+function rkNiatFor(session, index, sessions){
+  const p = RK_PRAYERS[session.key];
+  const qasarApplied = session.total !== p.rakaat;
+  const jamak = sessions.length === 2;
+  const jType = index===0 ? 'taqdim' : 'takhir';
+  const partner = jamak ? sessions[index===0?1:0] : null;
+
+  let ar = 'أُصَلِّي فَرْضَ ' + RK_AR_PRAYER[session.key] + ' ';
+  ar += qasarApplied ? RK_AR_QASAR : RK_AR_RAKAAT_FULL[session.total];
+  if (jamak) ar += ' ' + RK_AR_JAMAK[jType];
+  else if (!qasarApplied) ar += ' أَدَاءً';
+  ar += ' لِلَّهِ تَعَالَى';
+
+  let rumi = 'Usolli ' + RK_RUMI_FARD[session.key] + ' ';
+  rumi += qasarApplied ? RK_RUMI_QASAR : RK_RUMI_RAKAAT_FULL[session.total];
+  if (jamak) rumi += ' ' + RK_RUMI_JAMAK[jType];
+  else if (!qasarApplied) rumi += " Ada'an";
+  rumi += " Lillahi Ta'ala";
+
+  let my = 'Sahaja aku solat fardhu ' + p.name + ' ' + RK_NUM_WORD[session.total] + ' rakaat';
+  if (qasarApplied) my += ' qasar';
+  if (jamak) my += ' dihimpunkan solat ' + partner.name + ' kepadanya jamak ' + jType;
+  else if (!qasarApplied) my += ' tunai';
+  my += ' kerana Allah Taala.';
+
+  return { ar, rumi, my };
+}
+
+function rkRenderNiat(sessions){
+  const block = el('rk-niat-block');
+  block.innerHTML = '';
+  sessions.forEach((s,i) => {
+    const n = rkNiatFor(s, i, sessions);
+    const card = document.createElement('div');
+    card.className = 'rk-niat-card';
+    card.innerHTML = `
+      <div class="rk-niat-label">${sessions.length===2 ? s.name+' ('+(i===0?'mula':'kedua')+')' : s.name}</div>
+      <div class="rk-niat-ar">${n.ar}</div>
+      <div class="rk-niat-rumi">${n.rumi}</div>
+      <div class="rk-niat-my">${n.my}</div>`;
+    block.appendChild(card);
+  });
+}
+
+function rkRenderSetup(){
+  document.querySelectorAll('.rk-pbtn').forEach(btn => {
+    btn.classList.toggle('sel', btn.dataset.key === RK.selected);
+  });
+  const jOk = rkCanJamak(RK.selected), qOk = rkCanQasar(RK.selected);
+  el('rk-toggle-jamak').classList.toggle('off-able', !jOk);
+  el('rk-toggle-qasar').classList.toggle('off-able', !qOk);
+  el('rk-toggle-jamak').classList.toggle('on', RK.jamak && jOk);
+  el('rk-toggle-qasar').classList.toggle('on', RK.qasar && qOk);
+
+  const sessions = rkBuildSessions();
+  const note = el('rk-note');
+  if (sessions.length === 2){
+    note.innerHTML = `Jujukan: <b>${sessions[0].name} ${sessions[0].total} rakaat</b> → <b>${sessions[1].name} ${sessions[1].total} rakaat</b>.`;
+  } else {
+    const s = sessions[0];
+    note.innerHTML = `<b>${s.name}, ${s.total} rakaat.</b>` + (!jOk ? ' — tidak boleh dijamakkan.' : '');
+  }
+  rkRenderNiat(sessions);
+}
+
+function rkSelectPrayer(key){
+  RK.selected = key;
+  if (!rkCanJamak(key)) RK.jamak = false;
+  if (!rkCanQasar(key)) RK.qasar = false;
+  rkRenderSetup();
+}
+
+function rkCurrentSession(){ return RK.sessions[RK.sessionIdx]; }
+
+function rkPaintActive(){
+  const s = rkCurrentSession();
+  el('rk-active-title').textContent = s.name;
+  const badges = el('rk-active-badges');
+  badges.innerHTML = '';
+  if (RK.sessions.length === 2){
+    badges.innerHTML += `<span class="rk-badge">Jamak ${RK.sessionIdx===0?'Taqdim':'Takhir'}</span>`;
+  }
+  if (RK.qasar && rkCanQasar(s.key)){
+    badges.innerHTML += `<span class="rk-badge">Qasar</span>`;
+  }
+  el('rk-count').textContent = RK.rakaat;
+  el('rk-total').textContent = '/ ' + s.total;
+  el('rk-tap-zone').classList.remove('rk-tahiyat');
+  el('rk-stage').textContent = 'Tap untuk rakaat seterusnya';
+}
+
+function rkShowTransition(){
+  const next = RK.sessions[RK.sessionIdx+1];
+  el('rk-ov-eyebrow').textContent = 'Selesai ' + rkCurrentSession().name;
+  el('rk-ov-title').textContent = 'Mula ' + next.name;
+  el('rk-ov-btn').textContent = 'Teruskan';
+  el('rk-ov-btn').onclick = () => {
+    RK.sessionIdx++; RK.rakaat = 1;
+    el('rk-overlay').style.display = 'none';
+    rkPaintActive();
+  };
+  el('rk-overlay').style.display = 'flex';
+}
+
+function rkShowDone(){
+  el('rk-ov-eyebrow').textContent = 'Alhamdulillah';
+  el('rk-ov-title').textContent = 'Solat selesai';
+  el('rk-ov-btn').textContent = 'Solat lagi';
+  el('rk-ov-btn').onclick = () => { el('rk-overlay').style.display = 'none'; rkResetToSetup(); };
+  el('rk-overlay').style.display = 'flex';
+}
+
+function rkResetToSetup(){
+  el('rk-active').style.display = 'none';
+  el('rk-setup').style.display = 'flex';
+  rkRenderSetup();
+}
+
+function rkInit(){
+  const grid = el('rk-prayer-grid');
+  RK_ORDER.forEach(key => {
+    const p = RK_PRAYERS[key];
+    const btn = document.createElement('div');
+    btn.className = 'rk-pbtn' + (key==='maghrib' ? ' wide' : '');
+    btn.dataset.key = key;
+    btn.innerHTML = `<span class="rk-pname">${p.name}</span><span class="rk-pn">${p.rakaat}</span>`;
+    btn.addEventListener('click', () => rkSelectPrayer(key));
+    grid.appendChild(btn);
+  });
+
+  el('rk-toggle-jamak').addEventListener('click', () => {
+    if (!rkCanJamak(RK.selected)) return;
+    RK.jamak = !RK.jamak; rkRenderSetup();
+  });
+  el('rk-toggle-qasar').addEventListener('click', () => {
+    if (!rkCanQasar(RK.selected)) return;
+    RK.qasar = !RK.qasar; rkRenderSetup();
+  });
+
+  el('rk-start-btn').addEventListener('click', () => {
+    RK.sessions = rkBuildSessions();
+    RK.sessionIdx = 0; RK.rakaat = 1;
+    el('rk-setup').style.display = 'none';
+    el('rk-active').style.display = 'flex';
+    rkPaintActive();
+  });
+
+  el('rk-tap-zone').addEventListener('click', () => {
+    const s = rkCurrentSession();
+    if (RK.rakaat < s.total){
+      RK.rakaat++; rkVibrate(15);
+      el('rk-count').textContent = RK.rakaat;
+      if (RK.rakaat === s.total){
+        el('rk-tap-zone').classList.add('rk-tahiyat');
+        el('rk-stage').textContent = 'Tahiyat Akhir — tap untuk sahkan selesai';
+      } else {
+        el('rk-stage').textContent = 'Tap untuk rakaat seterusnya';
+      }
+      return;
+    }
+    rkVibrate([20,40,20]);
+    if (RK.sessionIdx < RK.sessions.length - 1) rkShowTransition();
+    else rkShowDone();
+  });
+
+  el('rk-exit-btn').addEventListener('click', rkResetToSetup);
+  el('rk-ov-reset-btn').addEventListener('click', () => { el('rk-overlay').style.display='none'; rkResetToSetup(); });
+
+  rkRenderSetup();
+}
+rkInit();
+
+/* ═══════════════════════════════════════════════════════════
    NAVIGATION
 ═══════════════════════════════════════════════════════════ */
 function el(id) { return document.getElementById(id); }
@@ -1482,7 +1850,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     const target = tab.dataset.s;
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    ['compass-screen','prayer-screen','settings-screen'].forEach(id => {
+    ['compass-screen','prayer-screen','rakaat-screen','settings-screen'].forEach(id => {
       document.getElementById(id).classList.toggle('active', id===target);
     });
     if (target==='prayer-screen' && !prayerInited) {
