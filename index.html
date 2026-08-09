@@ -384,14 +384,21 @@ html.light .p-time { color: var(--gold2); }
 .rk-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 8px 0 18px; }
 .rk-pbtn {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px 6px; text-align: center; cursor: pointer;
+  border-radius: 12px; padding: 10px 6px; text-align: center; cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: 52px;
 }
 .rk-pbtn.wide { grid-column: span 3; max-width: 33.3%; }
-.rk-pbtn .rk-pname { font-size: 13px; color: var(--text); }
-.rk-pbtn .rk-pn { display:block; font-size: 18px; font-weight: 700; color: var(--text3); margin-top: 3px; }
+.rk-pbtn .rk-pname { font-size: 13px; line-height: 1.2; color: var(--text); white-space: nowrap; }
+.rk-pbtn .rk-pn { display:block; font-size: 17px; line-height: 1.2; font-weight: 700; color: var(--text3); margin-top: 2px; }
 .rk-pbtn.sel { border-color: var(--gold); background: var(--surface2); }
 .rk-pbtn.sel .rk-pn { color: var(--gold2); }
+
+.rk-def { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; }
+.rk-def-line { font-size: 12px; line-height: 1.5; color: var(--text2); }
+.rk-def-line + .rk-def-line { margin-top: 6px; }
+.rk-def-line b { color: var(--gold2); font-weight: 600; }
 
 .rk-mode-row { display: flex; gap: 10px; margin-bottom: 8px; }
 .rk-mode {
@@ -568,6 +575,10 @@ html.light .p-time { color: var(--gold2); }
       <div class="rk-grid" id="rk-prayer-grid"></div>
 
       <div class="section-label">Kaedah</div>
+      <div class="rk-def">
+        <div class="rk-def-line"><b>Jamak</b> — himpunkan dua waktu solat dalam satu waktu (cth: Zohor &amp; Asar ditunaikan sekali pada waktu Zohor).</div>
+        <div class="rk-def-line"><b>Qasar</b> — pendekkan solat 4 rakaat kepada 2 rakaat. Khusus musafir; hanya untuk Zohor, Asar &amp; Isyak — Subuh dan Maghrib tidak boleh diqasarkan.</div>
+      </div>
       <div class="rk-mode-row">
         <div class="rk-mode" id="rk-toggle-jamak">
           <div class="rk-mode-title">Jamak</div>
