@@ -1,12 +1,12 @@
 # 🧭 The Qiblat
 
-A single-file progressive web app for **Qiblah direction** and **daily prayer times**. No install, no dependencies, no server — drop one HTML file anywhere and open it.
+A single-file progressive web app for **Qiblah direction**, **daily prayer times**, and **rakaat tracking with niat**. No install, no dependencies, no server — drop one HTML file anywhere and open it.
 
 ---
 
 ## Live demo
 
-Host `the_qiblat.html` on any HTTPS server or open it locally. GitHub Pages works out of the box.
+Host `index.html` on any HTTPS server or open it locally. GitHub Pages works out of the box.
 
 ---
 
@@ -16,6 +16,7 @@ Host `the_qiblat.html` on any HTTPS server or open it locally. GitHub Pages work
 |-----|-------------|
 | 🧭 **Qiblah** | Live compass driven by the device magnetometer. Rotating dial with N/S/E/W markers, red North needle, fixed gold stop-arrow at the top, and a green Qiblah arc that glows when you face Makkah. Popup alert fires at ±3°. |
 | 🕋 **Prayer** | GPS-located prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha) for today. Highlights the current and next prayer. Per-prayer alarm toggle using the Web Notifications API. |
+| 🔢 **Rakaat** | Tap-to-count rakaat tracker for all 5 daily prayers, with full Jamak (Zohor↔Asar, Maghrib↔Isyak) and Qasar support, and an auto-generated niat (Arabic + Rumi + Malay) for the exact combination selected. |
 | ⚙️ **Settings** | Dark / light theme, 12h / 24h time format, individual prayer alarm switches, and five calculation method choices. All preferences persist in `localStorage`. |
 
 ---
@@ -28,6 +29,7 @@ Host `the_qiblat.html` on any HTTPS server or open it locally. GitHub Pages work
 docs/
   compass-dark.png
   prayer-dark.png
+  rakaat-dark.png
   settings-dark.png
   compass-light.png
 ```
@@ -39,14 +41,14 @@ docs/
 ### Option A — open locally (Android / desktop)
 
 ```
-open the_qiblat.html          # macOS
-start the_qiblat.html         # Windows
-xdg-open the_qiblat.html      # Linux
+open index.html          # macOS
+start index.html         # Windows
+xdg-open index.html      # Linux
 ```
 
 ### Option B — GitHub Pages
 
-1. Push `the_qiblat.html` to a repository as `index.html`.
+1. Push `index.html` to a repository (already named `index.html`).
 2. Enable **Settings → Pages → Deploy from branch**.
 3. Open the generated `https://username.github.io/repo/` URL on your phone.
 
@@ -55,7 +57,7 @@ xdg-open the_qiblat.html      # Linux
 ```bash
 # Python 3 one-liner
 python3 -m http.server 8080
-# Then open http://localhost:8080/the_qiblat.html
+# Then open http://localhost:8080/index.html
 ```
 
 For iOS you need a real HTTPS origin. Use [ngrok](https://ngrok.com) or any static host.
@@ -69,6 +71,7 @@ For iOS you need a real HTTPS origin. Use [ngrok](https://ngrok.com) or any stat
 | GPS location | ✅ | ✅ HTTPS only | ✅ | ✅ |
 | Live compass | ✅ | ✅ HTTPS + permission prompt | ⚠️ partial | ❌ demo mode |
 | Prayer times | ✅ | ✅ | ✅ | ✅ |
+| Rakaat tracker | ✅ | ✅ | ✅ | ✅ |
 | Notifications | ✅ | ✅ iOS 16.4+ | ✅ | ✅ |
 | Dark mode | ✅ | ✅ | ✅ | ✅ |
 
@@ -88,6 +91,8 @@ No data leaves the device except two outbound requests:
 
 - **Nominatim** (`nominatim.openstreetmap.org`) — reverse geocoding to resolve city name. Falls back to raw coordinates silently if the request fails.
 - No analytics, no tracking, no third-party scripts.
+
+The Rakaat tab makes no network requests at all — it runs entirely on data baked into the page.
 
 ---
 
@@ -138,6 +143,41 @@ Default is **Muslim World League**, which is used across Malaysia, Southeast Asi
 
 ---
 
+## Rakaat tracker
+
+A tap-to-count screen so you never lose track of which rakaat you're on, with the correct rakaat count and niat generated for the waktu and kaedah (method) you pick.
+
+### Rakaat rules
+
+| Waktu | Normal | Boleh Qasar? |
+|---|---|---|
+| Subuh | 2 | Tidak — bilangan tetap |
+| Zohor | 4 | Ya → 2 |
+| Asar | 4 | Ya → 2 |
+| Maghrib | 3 | Tidak — bilangan tetap |
+| Isyak | 4 | Ya → 2 |
+
+**Jamak pairs:** only Zohor↔Asar and Maghrib↔Isyak can be combined — no other pairing is offered. When Maghrib+Isyak is jamak'd with qasar on, Maghrib always stays at 3 rakaat (it's never shortened); only Isyak drops to 2.
+
+### Flow
+
+1. Pick a waktu, toggle **Jamak** and/or **Qasar** (greyed out when not applicable to that waktu — e.g. Subuh can't do either).
+2. Read the generated niat, tap **Mula**.
+3. Tap anywhere on the counting screen to advance a rakaat (with a short vibration on supported devices).
+4. On the last rakaat, the screen switches to a **Tahiyat Akhir** cue — one more tap confirms the session is done.
+5. If Jamak is on, a **"Selesai X → Mula Y"** screen requires an explicit tap before the second prayer's count starts, so it's never advanced automatically without you noticing.
+
+### Niat generation — sourcing notes
+
+Every niat is built at runtime (Arabic + Rumi transliteration + Malay meaning) from the selected waktu / jamak / qasar combination. For transparency:
+
+- **Directly cross-checked against JAKIM-referenced guides:** the 5 normal (tunai) niat, qasar-only niat (Zohor/Asar/Isyak), and jamak+qasar niat for Zohor↔Asar and Maghrib↔Isyak (both taqdim and takhir).
+- **Built from the same confirmed word pattern, not individually sourced:** jamak-without-qasar phrasing, and the Zohor↔Asar taqdim Arabic line — assembled from the identical structure verified elsewhere in the sourced set (e.g. Maghrib's non-qasar jamak niat follows the exact same template). Low risk since it's a mechanical substitution of already-confirmed words, but flagged here rather than presented as independently verified.
+- The app shows a permanent reminder in-screen: *"Lafaz sebagai bantuan sahaja — niat sebenar di dalam hati"* (the lafaz is just an aid — the real niat is in the heart), consistent with standard fiqh teaching that niat is a heart-matter, not a mandatory spoken formula.
+- If you rely on a specific mazhab ruling that differs in wording, verify against your own rujukan/ustaz — this is a memory aid, not a fatwa source.
+
+---
+
 ## Compass calibration
 
 If the needle drifts or reads incorrectly:
@@ -154,7 +194,7 @@ Magnetic interference from metal surfaces, speakers, or cases can affect accurac
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Dark mode | On | Toggle on Prayer screen (🌙/☀️) or in Settings |
+| Dark mode | On | Toggle on Prayer screen (🌙/☀️) or in Settings — also applies to the Rakaat tab |
 | 24-hour time | Off | Applies to the prayer time display |
 | Fajr alarm | Off | Browser notification at calculated Fajr time |
 | Dhuhr alarm | Off | |
@@ -163,7 +203,7 @@ Magnetic interference from metal surfaces, speakers, or cases can affect accurac
 | Isha alarm | Off | |
 | Calculation method | MWL | Changes prayer times; reloads prayer screen |
 
-Settings are saved to `localStorage` under key `qiblat_prefs` and restored on every load.
+Settings are saved to `localStorage` under key `qiblat_prefs` and restored on every load. The Rakaat tab does not persist any state between sessions by design — every visit starts from a clean waktu picker.
 
 ---
 
@@ -172,21 +212,23 @@ Settings are saved to `localStorage` under key `qiblat_prefs` and restored on ev
 Everything is in one file. Internal layout:
 
 ```
-the_qiblat.html
+index.html
 │
 ├── <style>
 │   ├── CSS custom properties (dark + light token sets)
 │   ├── App shell (screen, bottom-nav, topbar)
 │   ├── Compass screen styles
 │   ├── Prayer times screen styles
+│   ├── Rakaat screen styles
 │   ├── Settings screen styles
 │   └── Popup overlay + spinner
 │
 ├── <body>
 │   ├── #compass-screen   → canvas + stop-arrow + align banner
 │   ├── #prayer-screen    → location header + prayer card list
+│   ├── #rakaat-screen    → waktu picker + niat card + tap counter + transition overlay
 │   ├── #settings-screen  → toggles + method radio options
-│   ├── .bottom-nav       → three tab buttons
+│   ├── .bottom-nav       → four tab buttons
 │   └── #aligned-overlay  → modal popup
 │
 └── <script>
@@ -205,6 +247,9 @@ the_qiblat.html
     ├── scheduleAlarms()     Web Notifications API setTimeout scheduling
     ├── getHijriDate()       Intl.DateTimeFormat islamic calendar (with tabular fallback)
     ├── buildSettings()      Renders alarm toggles + method radio options
+    ├── RK{} + rkBuildSessions()   rakaat/jamak/qasar session logic
+    ├── rkNiatFor()                Arabic/Rumi/Malay niat generator
+    ├── rkPaintActive() / rkShowTransition() / rkShowDone()   tap-counter state machine
     └── Navigation + event wiring
 ```
 
@@ -216,6 +261,7 @@ the_qiblat.html
 - **High latitudes** — prayer times become undefined when the sun does not set or rise. The hour angle formula returns `null` in these cases and falls back to estimated offsets. A dedicated high-latitude rule (such as the nearest-latitude method) is not implemented.
 - **Asr madhab** — calculation uses the Shafi'i shadow factor (1). Hanafi shadow factor (2) is not a separate toggle; selecting the Karachi method as a whole provides the closest approximation.
 - **Notifications on iOS** — requires iOS 16.4+, must be added to the Home Screen as a PWA, and notifications must be enabled in device Settings.
+- **Rakaat tracker** — does not check musafir distance/day-count conditions for Jamak/Qasar eligibility; it only computes the correct rakaat count and niat for whatever mode you select. The choice of whether Jamak/Qasar applies to your situation is yours to make.
 
 ---
 
@@ -231,3 +277,4 @@ MIT — see [LICENSE](LICENSE)
 - Prayer time algorithm: based on the method documented by the University of Islamic Sciences, Karachi, and cross-referenced with PrayTimes.org
 - Reverse geocoding: [Nominatim / OpenStreetMap](https://nominatim.openstreetmap.org) (ODbL licence)
 - Hijri date: `Intl.DateTimeFormat` with `calendar: 'islamic'`, tabular fallback for unsupported environments
+- Rakaat/niat rules: cross-checked against JAKIM-referenced guides and Jabatan Mufti (state) publications — see the Rakaat tracker section above for exactly which lines were directly sourced vs. pattern-derived
