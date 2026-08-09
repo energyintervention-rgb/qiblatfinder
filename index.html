@@ -625,6 +625,10 @@ html.light .p-time { color: var(--gold2); }
     </div>
   </div>
 
+  <!-- Hidden looping video: keeps the screen awake as a fallback where the
+       Wake Lock API is unsupported or gets silently dropped mid-solat -->
+  <video id="rk-nosleep" muted loop playsinline style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMXbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAA+gAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAkF0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAA+gAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAIAAAACAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAPoAAAAAAABAAAAAAG5bWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAQABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABZG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAASRzdGJsAAAAwHN0c2QAAAAAAAAAAQAAALBhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAgBIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAANmF2Y0MBZAAK/+EAGWdkAAqs2V+IiMBEAAADAAQAAAMACDxIllgBAAZo6+PLIsD9+PgAAAAAEHBhc3AAAAABAAAAAQAAABRidHJ0AAAAAAAAFigAABYoAAAAGHN0dHMAAAAAAAAAAQAAAAEAAEAAAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAABAAAAAQAAABRzdHN6AAAAAAAAAsUAAAABAAAAFHN0Y28AAAAAAAAAAQAAA0cAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjYwLjE2LjEwMAAAAAhmcmVlAAACzW1kYXQAAAKtBgX//6ncRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTY0IHIzMTA4IDMxZTE5ZjkgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDIzIC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MSByZWY9MyBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgzOjB4MTEzIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0xIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS0yIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTMgYl9weXJhbWlkPTIgYl9hZGFwdD0xIGJfYmlhcz0wIGRpcmVjdD0xIHdlaWdodGI9MSBvcGVuX2dvcD0wIHdlaWdodHA9MiBrZXlpbnQ9MjUwIGtleWludF9taW49MSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAABBliIQAFf/+98nvwKbr29+B"></video>
+
   <!-- ══════ SETTINGS ══════ -->
   <div id="settings-screen" class="screen">
     <div class="topbar">
@@ -1669,16 +1673,38 @@ const RK_STORAGE_KEY = 'qiblat_rakaat_session';
 const RK_TIMEOUT_MS = 20 * 60 * 1000;
 
 /* Keep the screen awake while actively counting rakaat, so the phone
-   doesn't lock mid-solat. Released on exit/finish; re-acquired if the
-   tab regains visibility while a session is still active (the browser
-   auto-releases the lock whenever the tab is hidden). */
+   doesn't lock mid-solat. Two mechanisms run together for reliability:
+   1) Screen Wake Lock API (Chrome/Android, Safari iOS 16.4+)
+   2) A hidden looping muted video — the classic fallback for browsers
+      where Wake Lock is unsupported or gets silently dropped after a
+      while. Both are re-armed on every tap and on visibility regain. */
 let rkWakeLock = null;
+let rkWakeLockInterval = null;
 async function rkRequestWakeLock(){
-  if (!('wakeLock' in navigator)) return;
-  try { rkWakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+  if ('wakeLock' in navigator) {
+    try { rkWakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+  }
+  const vid = document.getElementById('rk-nosleep');
+  if (vid) { try { await vid.play(); } catch(e){} }
+  if (!rkWakeLockInterval) {
+    rkWakeLockInterval = setInterval(() => {
+      if (el('rk-active').style.display === 'flex') rkRequestWakeLock2();
+    }, 15000);
+  }
+}
+// Lightweight re-arm used by the interval, avoids recursively resetting the interval itself
+async function rkRequestWakeLock2(){
+  if ('wakeLock' in navigator && (!rkWakeLock || rkWakeLock.released)) {
+    try { rkWakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+  }
+  const vid = document.getElementById('rk-nosleep');
+  if (vid && vid.paused) { try { await vid.play(); } catch(e){} }
 }
 function rkReleaseWakeLock(){
   if (rkWakeLock) { try { rkWakeLock.release(); } catch(e){} rkWakeLock = null; }
+  const vid = document.getElementById('rk-nosleep');
+  if (vid) { try { vid.pause(); } catch(e){} }
+  if (rkWakeLockInterval) { clearInterval(rkWakeLockInterval); rkWakeLockInterval = null; }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && el('rk-active').style.display === 'flex') {
@@ -1910,6 +1936,7 @@ function rkInit(){
   });
 
   el('rk-tap-zone').addEventListener('click', () => {
+    rkRequestWakeLock();
     const s = rkCurrentSession();
     if (RK.rakaat < s.total){
       RK.rakaat++; rkVibrate(15);
